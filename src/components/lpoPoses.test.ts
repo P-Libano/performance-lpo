@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { GROUND, LEN, MIDFOOT, RETURN_LABEL, SEQUENCES, cycleMs, dist, frameAt, knee, poseAt, skeleton } from './lpoPoses'
+import { BAR, GROUND, HALF, LEN, MIDFOOT, RETURN_LABEL, SEQUENCES, VIEWBOX, cycleMs, dist, frameAt, gripFor, knee, outline, poseAt, rig, skeleton } from './lpoPoses'
 
 const all = Object.entries(SEQUENCES)
 const frame = (id: keyof typeof SEQUENCES, label: string) => SEQUENCES[id].frames.find((f) => f[3] === label)![0]
@@ -92,6 +92,66 @@ describe('animações de LPO — técnica', () => {
     expect(p.front[0]).toBeGreaterThan(p.back[0] + 25)
     expect(p.back[1]).toBeGreaterThan(0)
     expect(skeleton(p).bar[1]).toBeLessThan(skeleton(p).head[1])
+  })
+})
+
+describe('animações de LPO — vista 3/4', () => {
+  const ids = Object.keys(SEQUENCES) as (keyof typeof SEQUENCES)[]
+  const d3 = (a: number[], b: number[]) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+  it('nada sai do quadro: corpo, barra e anilhas cabem no viewBox em todo o ciclo', () => {
+    for (const id of ids) {
+      const [x, y, w, h] = VIEWBOX[id]
+      expect(w).toBeCloseTo(h, 5) // quadrado, como os GIFs
+      const { frames } = SEQUENCES[id]
+      for (let t = 0; t < cycleMs(frames); t += 30) {
+        for (const [[px, py], r] of outline(rig(poseAt(frames, t), gripFor(id)))) {
+          expect(px - r, id).toBeGreaterThanOrEqual(x)
+          expect(px + r, id).toBeLessThanOrEqual(x + w)
+          expect(py - r, id).toBeGreaterThanOrEqual(y)
+          expect(py + r, id).toBeLessThanOrEqual(y + h)
+        }
+      }
+    }
+  })
+
+  it('as mãos ficam na barra, entre os colares, com a pegada certa (arranco larga, clean/jerk na largura dos ombros)', () => {
+    for (const id of ids) {
+      const { frames } = SEQUENCES[id]
+      for (let t = 0; t < cycleMs(frames); t += 40) {
+        const r = rig(poseAt(frames, t), gripFor(id))
+        for (const sd of [r.far, r.near]) {
+          expect(Math.hypot(sd.hand[0] - r.s.bar[0], sd.hand[1] - r.s.bar[1])).toBeLessThan(0.01)
+          expect(Math.abs(sd.hand[2])).toBeLessThan(BAR.collar)
+          expect(Math.abs(sd.hand[2])).toBeGreaterThan(HALF.shoulder)
+        }
+      }
+    }
+    expect(gripFor('snatch')).toBeGreaterThan(gripFor('clean') + 8)
+  })
+
+  it('o giro dos cotovelos é contínuo (o cotovelo passa pelo lado, sem pular)', () => {
+    for (const id of ids) {
+      const { frames } = SEQUENCES[id]
+      // passo curto: um movimento rápido (a puxada por baixo) anda ~5 em 8 ms; um pulo de solução anda > 12
+      for (let t = 0; t < cycleMs(frames); t += 8) {
+        const [a, b] = [rig(poseAt(frames, t)), rig(poseAt(frames, t + 8))]
+        expect(d3(a.near.elbow, b.near.elbow), `${id} @${t}`).toBeLessThan(8)
+      }
+    }
+    // nas poses-chave, o cotovelo 3D coincide com o do perfil
+    const s = rig(frame('clean', 'Recepção'))
+    expect(s.near.elbow[0]).toBeCloseTo(s.s.elbow[0], 5)
+    expect(s.near.elbow[1]).toBeCloseTo(s.s.elbow[1], 5)
+  })
+
+  it('no rack o cotovelo fica à frente e um pouco abaixo do ombro (não apontando para cima)', () => {
+    for (const p of [frame('clean', 'Recepção'), frame('jerk', 'Rack')]) {
+      const s = skeleton(p)
+      const ang = (Math.atan2(s.elbow[1] - s.shoulder[1], s.elbow[0] - s.shoulder[0]) * 180) / Math.PI
+      expect(ang).toBeGreaterThan(10) // abaixo da horizontal (y do SVG cresce para baixo)
+      expect(ang).toBeLessThan(60)
+    }
   })
 })
 

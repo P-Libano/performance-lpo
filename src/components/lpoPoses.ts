@@ -24,13 +24,16 @@ export interface Pose {
   bar: Pt
   /** Para onde o cotovelo aponta quando o braço dobra: à frente (rack do clean) ou atrás/acima (puxada). */
   elbow: 'front' | 'back'
+  /**
+   * Lado do cotovelo entre quadros: 0 = solução "p" da cinemática (à direita da linha ombro→mão), 1 = a outra.
+   * Só a vista 3D usa: no giro o cotovelo passa por fora, pelo lado, em vez de pular de uma solução para a
+   * outra. Ausente = o lado que `elbow` escolhe.
+   */
+  turn?: number
 }
 
 export const GROUND = 110
 export const LEN = { thigh: 29, shin: 27, torso: 32, upperArm: 20, forearm: 17, neck: 5, head: 6.5, plate: 13, foot: 13 }
-/** Deslocamento do lado de lá do corpo (dá profundidade) e da anilha do outro lado da barra. */
-export const DEPTH: Pt = [3, -2]
-export const PLATE_DEPTH: Pt = [8, -5]
 /** Meio do pé = tornozelo + 3,5 (onde a barra deve passar). */
 export const MIDFOOT = 3.5
 
@@ -58,28 +61,33 @@ const OVERHEAD = P([59, 51], 0, [61, -17.9])
 
 // arremesso (clean): barra sobre os ombros, cotovelos altos à frente
 const CLEAN_UNDER = P([51, 72], 8, [61, 36], 'front', 2)
-const CLEAN_CATCH = P([40, 88], 12, [55, 58.5], 'front')
-const RACK = P([59, 51], 0, [66.5, 21.5], 'front')
+// a barra apoia nos deltoides, um pouco ACIMA da articulação do ombro: assim o braço dobra com o cotovelo
+// à frente e levemente abaixo do ombro (≈ 35° da horizontal), como num rack real, e não apontando para cima
+const CLEAN_CATCH = P([40, 88], 12, [55.5, 53.5], 'front')
+const RACK = P([59, 51], 0, [66.5, 15.5], 'front')
 
 // jerk
-const DIP = P([59, 58], 0, [66.5, 28.5], 'front')
+const DIP = P([59, 58], 0, [66.5, 22.5], 'front')
 const DRIVE = P([59, 46], 0, [63, -3], 'front', 7)
 const SPLIT = P([57, 61], 0, [60, -7.8], 'back', 0, 76, 38, 7)
 
 type Ease = 'in' | 'out' | 'inout'
 
-/** [pose, ms até chegar nela, ms parada nela, nome da fase, curva] */
-export type Frame = [Pose, number, number, string, Ease?]
+/**
+ * [pose, ms até chegar nela, ms parada nela, nome da fase, curva, arco]. Arco = quanto a barra se afasta para a
+ * frente no meio da transição (em linha reta ela passaria por dentro do tronco/ombro).
+ */
+export type Frame = [Pose, number, number, string, Ease?, number?]
 
 export const SEQUENCES: Record<LpoAnimation, { frames: Frame[]; caption: string }> = {
   snatch: {
     caption: 'Arranco: puxada do chão, tripla extensão e recepção em agachamento com a barra acima da cabeça.',
     frames: [
-      [SETUP, 800, 500, 'Posição inicial'],
+      [SETUP, 800, 500, 'Posição inicial', 'inout', 12],
       [KNEE, 550, 0, '1ª puxada', 'in'],
       [POWER, 250, 0, 'Transição'],
       [EXTENSION, 170, 120, '2ª puxada', 'in'],
-      [SNATCH_UNDER, 200, 0, 'Puxada por baixo', 'out'],
+      [SNATCH_UNDER, 200, 0, 'Puxada por baixo', 'out', 8],
       [SNATCH_CATCH, 230, 650, 'Recepção', 'out'],
       [OVERHEAD, 1000, 800, 'Recuperação'],
     ],
@@ -87,10 +95,10 @@ export const SEQUENCES: Record<LpoAnimation, { frames: Frame[]; caption: string 
   'snatch-hang': {
     caption: 'Arranco suspenso: começa em pé, desce a barra até acima dos joelhos e explode.',
     frames: [
-      [STAND_HANG, 700, 500, 'Em pé'],
+      [STAND_HANG, 700, 500, 'Em pé', 'inout', 12],
       [HANG, 650, 200, 'Suspenso'],
       [EXTENSION, 200, 120, '2ª puxada', 'in'],
-      [SNATCH_UNDER, 200, 0, 'Puxada por baixo', 'out'],
+      [SNATCH_UNDER, 200, 0, 'Puxada por baixo', 'out', 8],
       [SNATCH_CATCH, 230, 650, 'Recepção', 'out'],
       [OVERHEAD, 1000, 800, 'Recuperação'],
     ],
@@ -98,11 +106,11 @@ export const SEQUENCES: Record<LpoAnimation, { frames: Frame[]; caption: string 
   clean: {
     caption: 'Clean: puxada do chão, tripla extensão e recepção da barra nos ombros em agachamento frontal.',
     frames: [
-      [SETUP, 800, 500, 'Posição inicial'],
+      [SETUP, 800, 500, 'Posição inicial', 'inout', 12],
       [KNEE, 550, 0, '1ª puxada', 'in'],
       [POWER, 250, 0, 'Transição'],
       [EXTENSION, 170, 120, '2ª puxada', 'in'],
-      [CLEAN_UNDER, 200, 0, 'Giro dos cotovelos', 'out'],
+      [CLEAN_UNDER, 200, 0, 'Giro dos cotovelos', 'out', 5],
       [CLEAN_CATCH, 230, 650, 'Recepção', 'out'],
       [RACK, 1000, 800, 'Recuperação'],
     ],
@@ -136,6 +144,17 @@ const EASE: Record<Ease, (t: number) => number> = {
   inout: (t) => t * t * (3 - 2 * t),
 }
 
+/** As duas soluções do cotovelo para a pose (sempre na mesma ordem: varia de forma contínua com o braço). */
+function elbowSolutions(p: Pose): [Pt, Pt, Skeleton] {
+  const s = skeleton(p)
+  return [ik(s.shoulder, s.hand, LEN.upperArm, LEN.forearm, (a) => a), ik(s.shoulder, s.hand, LEN.upperArm, LEN.forearm, (_, b) => b), s]
+}
+const turnOf = (p: Pose) => {
+  if (p.turn !== undefined) return p.turn
+  const [first, , s] = elbowSolutions(p)
+  return dist(s.elbow, first) < 1e-6 ? 0 : 1
+}
+
 export function mix(a: Pose, b: Pose, t: number, ease: Ease = 'inout'): Pose {
   const e = EASE[ease](Math.min(1, Math.max(0, t)))
   const pair = <T extends number[]>(x: T, y: T) => x.map((v, i) => lerp(v, y[i], e)) as T
@@ -145,8 +164,9 @@ export function mix(a: Pose, b: Pose, t: number, ease: Ease = 'inout'): Pose {
     back: pair(a.back, b.back),
     torso: lerp(a.torso, b.torso, e),
     bar: pair(a.bar, b.bar),
-    // o cotovelo troca de lado no meio do caminho (giro dos cotovelos no clean)
+    // o cotovelo troca de lado no meio do caminho (giro dos cotovelos no clean); na vista 3D o giro é contínuo
     elbow: e < 0.5 ? a.elbow : b.elbow,
+    turn: lerp(turnOf(a), turnOf(b), e),
   }
 }
 
@@ -158,10 +178,16 @@ export const cycleMs =(frames: Frame[]) => frames.reduce((a, [, move, hold]) => 
 export function frameAt(frames: Frame[], ms: number): { pose: Pose; label: string } {
   let t = ms % cycleMs(frames)
   for (let i = 0; i < frames.length; i++) {
-    const [pose, move, hold, label, ease] = frames[i]
+    const [pose, move, hold, label, ease, arc = 0] = frames[i]
     const from = frames[(i - 1 + frames.length) % frames.length][0]
-    // a volta do fim ao começo não é uma fase do movimento
-    if (t < move) return { pose: mix(from, pose, t / move, ease), label: i === 0 ? RETURN_LABEL : label }
+    if (t < move) {
+      const p = mix(from, pose, t / move, ease)
+      // arco: a barra passa à frente do tronco (na volta, desce à frente do rosto; na puxada por baixo,
+      // o pequeno "laço" para a frente que a trajetória real tem)
+      if (arc) p.bar = [p.bar[0] + arc * Math.sin((Math.PI * t) / move), p.bar[1]]
+      // a volta do fim ao começo não é uma fase do movimento
+      return { pose: p, label: i === 0 ? RETURN_LABEL : label }
+    }
     t -= move
     if (t < hold) return { pose, label }
     t -= hold
@@ -217,7 +243,6 @@ export interface Skeleton {
   /** Lado de lá (perna de trás no split) e lado de cá. */
   legs: [Leg, Leg]
   bar: Pt
-  barFar: Pt
 }
 
 function leg(hip: Pt, [x, lift]: [number, number]): Leg {
@@ -246,7 +271,6 @@ export function skeleton(p: Pose): Skeleton {
     hand: bar,
     legs: [leg(p.hip, p.back), leg(p.hip, p.front)],
     bar,
-    barFar: add(bar, PLATE_DEPTH),
   }
 }
 
@@ -265,9 +289,116 @@ export function reachable(shoulder: Pt, bar: Pt): Pt {
   return [shoulder[0] + (bar[0] - shoulder[0]) * k, shoulder[1] + (bar[1] - shoulder[1]) * k]
 }
 
-/** Mesmo esqueleto, deslocado para o lado de lá do corpo. */
-export const farSide = (s: Skeleton): Skeleton => {
-  const o = (q: Pt) => add(q, DEPTH)
-  const l = (g: Leg): Leg => ({ ankle: o(g.ankle), knee: o(g.knee), heel: o(g.heel), toe: o(g.toe) })
-  return { ...s, hip: o(s.hip), shoulder: o(s.shoulder), elbow: o(s.elbow), hand: o(s.hand), legs: [l(s.legs[0]), l(s.legs[1])] }
+// ───────── vista 3/4 (como os GIFs do dataset) ─────────
+//
+// O movimento acontece no plano de perfil (x à frente, y para baixo, como no SVG); a largura do corpo
+// e a barra ficam no eixo z (positivo = lado de cá, perto da câmera). A câmera fica à frente e à esquerda
+// do atleta, um pouco acima (projeção ortográfica): dá para ver as duas anilhas, como nos GIFs da Gym Visual,
+// sem perder a leitura da trajetória da barra.
+
+export type P3 = [number, number, number]
+
+export const CAM = { yaw: 38, pitch: 12 }
+const CY = Math.cos(rad(CAM.yaw))
+const SY = Math.sin(rad(CAM.yaw))
+const CP = Math.cos(rad(CAM.pitch))
+const SP = Math.sin(rad(CAM.pitch))
+
+/** Ponto 3D → tela (unidades do viewBox). */
+export const project = ([x, y, z]: P3): Pt => [x * CY - z * SY, x * SY * SP + y * CP + z * CY * SP]
+/** Vetor unitário que aponta para a câmera (para saber o que está de frente para ela). */
+export const TO_CAM: P3 = [SY * CP, -SP, CY * CP]
+
+/** Meia-largura de cada junta (z) e da pegada; barra olímpica com anilhas de 45 cm em escala. */
+export const HALF = { hip: 6.5, knee: 7, ankle: 7.5, shoulder: 11.5 }
+export const GRIP = { snatch: 29, clean: 16 }
+export const BAR = { collar: 41, plateIn: 43, plateOut: 48, end: 70 }
+export const gripFor = (id: LpoAnimation) => (id === 'snatch' || id === 'snatch-hang' ? GRIP.snatch : GRIP.clean)
+
+export interface Side3 {
+  hip: P3
+  knee: P3
+  ankle: P3
+  heel: P3
+  toe: P3
+  shoulder: P3
+  elbow: P3
+  hand: P3
 }
+
+/** Esqueleto em 3D: lado de lá (z < 0, perna de trás no split) e lado de cá. */
+export interface Rig {
+  s: Skeleton
+  far: Side3
+  near: Side3
+  grip: number
+}
+
+export function rig(p: Pose, grip: number = GRIP.clean): Rig {
+  const [first, second, s] = elbowSolutions(p)
+  const at = (q: Pt, z: number): P3 => [q[0], q[1], z]
+  // giro do cotovelo: as duas soluções da cinemática ficam nas pontas de um círculo em volta da linha
+  // ombro–mão; no meio do giro o cotovelo sai para o lado (z), como no movimento de verdade
+  const mid: Pt = [(first[0] + second[0]) / 2, (first[1] + second[1]) / 2]
+  const phi = Math.PI * Math.min(1, Math.max(0, turnOf(p)))
+  const c = Math.cos(phi)
+  const elbow2: Pt = [mid[0] + (first[0] - mid[0]) * c, mid[1] + (first[1] - mid[1]) * c]
+  const out = (dist(first, second) / 2) * Math.sin(phi)
+  const side = (k: -1 | 1): Side3 => {
+    const l = s.legs[k < 0 ? 0 : 1]
+    return {
+      hip: at(s.hip, k * HALF.hip),
+      knee: at(l.knee, k * HALF.knee),
+      ankle: at(l.ankle, k * HALF.ankle),
+      heel: at(l.heel, k * HALF.ankle),
+      toe: at(l.toe, k * HALF.ankle),
+      shoulder: at(s.shoulder, k * HALF.shoulder),
+      // o cotovelo abre entre o ombro e a mão (pegada mais larga que os ombros)
+      elbow: at(elbow2, k * (HALF.shoulder + (grip - HALF.shoulder) * 0.55 + out)),
+      hand: at(s.hand, k * grip),
+    }
+  }
+  return { s, far: side(-1), near: side(1), grip }
+}
+
+/** Pontos de contorno de um quadro (com o raio de cada um), para enquadrar a figura. */
+export function outline(r: Rig): [Pt, number][] {
+  const pts: [Pt, number][] = []
+  for (const sd of [r.far, r.near]) for (const q of Object.values(sd)) pts.push([project(q), 6])
+  for (const k of [-1, 1]) {
+    const c = r.s.bar
+    // anilha: disco no plano xy → a extensão projetada cabe no raio
+    pts.push([project([c[0], c[1], k * BAR.plateOut]), LEN.plate + 1])
+    pts.push([project([c[0], c[1], k * BAR.plateIn]), LEN.plate + 1])
+    pts.push([project([c[0], c[1], k * BAR.end]), 1.5])
+  }
+  pts.push([project([r.s.head[0], r.s.head[1], 0]), LEN.head + 2])
+  return pts
+}
+
+export type Box = [number, number, number, number]
+
+/**
+ * Enquadramento quadrado de cada animação, calculado varrendo todos os quadros do ciclo: nada sai do
+ * quadro e a figura ocupa o máximo dele (como cada GIF do dataset, que é enquadrado no seu movimento).
+ */
+export function viewBoxFor(id: LpoAnimation): Box {
+  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]
+  const { frames } = SEQUENCES[id]
+  const T = cycleMs(frames)
+  for (let t = 0; t <= T; t += 20) {
+    for (const [[x, y], rr] of outline(rig(poseAt(frames, t), gripFor(id)))) {
+      x0 = Math.min(x0, x - rr)
+      x1 = Math.max(x1, x + rr)
+      y0 = Math.min(y0, y - rr)
+      y1 = Math.max(y1, y + rr)
+    }
+  }
+  const pad = 3
+  const size = Math.max(x1 - x0, y1 - y0) + 2 * pad
+  const cx = (x0 + x1) / 2
+  const cy = (y0 + y1) / 2
+  return [cx - size / 2, cy - size / 2, size, size].map((v) => Math.round(v * 10) / 10) as Box
+}
+
+export const VIEWBOX = Object.fromEntries(Object.keys(SEQUENCES).map((id) => [id, viewBoxFor(id as LpoAnimation)])) as Record<LpoAnimation, Box>
