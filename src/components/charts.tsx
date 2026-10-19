@@ -216,6 +216,155 @@ export function TonnageChart({ points }: { points: TonnagePoint[] }) {
   )
 }
 
+/** Carga de trabalho por semana do ciclo: atual (cor do gráfico) × mesma semana do ciclo anterior (cinza). */
+export function CycleWeeksChart({ data, cycle }: { data: { week: string; kg: number | null; prev: number | null }[]; cycle: number }) {
+  const hasPrev = data.some((d) => d.prev)
+  const rows = data.map((d) => ({ ...d, kg: d.kg ?? 0, prev: d.prev ?? 0 }))
+  return (
+    <ChartOrTable
+      chart={
+        <figure aria-label="Carga por semana do ciclo">
+          {hasPrev && (
+            <figcaption className="mb-1 flex gap-3 text-xs text-muted">
+              <span className="flex items-center gap-1">
+                <span className="size-2.5 rounded-sm" style={{ background: C.mark }} /> Ciclo {cycle}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="size-2.5 rounded-sm" style={{ background: C.muted }} /> Ciclo anterior
+              </span>
+            </figcaption>
+          )}
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={rows} margin={{ top: 18, right: 8, bottom: 0, left: -8 }} barGap={2} barCategoryGap="24%">
+              <CartesianGrid stroke={C.grid} strokeWidth={1} vertical={false} />
+              <XAxis dataKey="week" tick={AXIS_TICK} tickLine={false} tickMargin={8} axisLine={{ stroke: C.grid }} />
+              <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={44} tickFormatter={(v: number) => v.toLocaleString('pt-BR')} />
+              <Tooltip
+                cursor={{ fill: 'var(--color-surface-2)' }}
+                content={({ active, payload }) => {
+                  const p = active && payload?.[0]?.payload
+                  if (!p) return null
+                  return (
+                    <TooltipBox>
+                      <p className="text-muted">{p.week}</p>
+                      <p className="font-semibold text-ink">{p.kg ? fmtKg(p.kg) : 'sem registro'}</p>
+                      {hasPrev && <p className="text-muted">Ciclo anterior: {p.prev ? fmtKg(p.prev) : '—'}</p>}
+                    </TooltipBox>
+                  )
+                }}
+              />
+              {hasPrev && <Bar dataKey="prev" fill={C.muted} radius={[4, 4, 0, 0]} maxBarSize={22} isAnimationActive={false} />}
+              <Bar dataKey="kg" fill={C.mark} radius={[4, 4, 0, 0]} maxBarSize={22} isAnimationActive={false}>
+                <LabelList
+                  dataKey="kg"
+                  content={({ x, y, width, value }) =>
+                    Number(value) > 0 ? (
+                      <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} fill={C.ink} fontSize={11} textAnchor="middle">
+                        {Number(value).toLocaleString('pt-BR')}
+                      </text>
+                    ) : null
+                  }
+                />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </figure>
+      }
+      table={
+        <table className="w-full text-sm tabular-nums">
+          <thead className="text-left text-xs text-muted">
+            <tr>
+              <th className="py-1 font-normal">Semana</th>
+              <th className="py-1 font-normal">Ciclo {cycle}</th>
+              {hasPrev && <th className="py-1 font-normal">Anterior</th>}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {data.map((d) => (
+              <tr key={d.week}>
+                <td className="py-1.5">{d.week}</td>
+                <td>{d.kg ? fmtKg(d.kg) : '—'}</td>
+                {hasPrev && <td>{d.prev ? fmtKg(d.prev) : '—'}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      }
+    />
+  )
+}
+
+/** Maior carga do exercício em cada ciclo (uma série: sem legenda; o título nomeia). */
+export function CycleHistoryChart({ data }: { data: { label: string; kg: number }[] }) {
+  const last = data.length - 1
+  return (
+    <ChartOrTable
+      chart={
+        <figure aria-label="Maior carga por ciclo">
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={data} margin={{ top: 16, right: 44, bottom: 0, left: -8 }}>
+              <CartesianGrid stroke={C.grid} strokeWidth={1} vertical={false} />
+              <XAxis dataKey="label" tick={AXIS_TICK} tickLine={false} tickMargin={8} axisLine={{ stroke: C.grid }} />
+              <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} tickFormatter={(v: number) => v.toLocaleString('pt-BR')} />
+              <Tooltip
+                cursor={{ stroke: C.muted, strokeWidth: 1 }}
+                content={({ active, payload }) => {
+                  const p = active && payload?.[0]?.payload
+                  if (!p) return null
+                  return (
+                    <TooltipBox>
+                      <p className="text-muted">{p.label.replace('C', 'Ciclo ')}</p>
+                      <p className="font-semibold text-ink">{fmtKg(p.kg)}</p>
+                    </TooltipBox>
+                  )
+                }}
+              />
+              <Line
+                type="linear"
+                dataKey="kg"
+                stroke={C.mark}
+                strokeWidth={2}
+                isAnimationActive={false}
+                dot={{ r: 4, fill: C.mark, stroke: C.surface, strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: C.mark, stroke: C.surface, strokeWidth: 2 }}
+              >
+                <LabelList
+                  dataKey="kg"
+                  content={({ x, y, index }) =>
+                    index === last ? (
+                      <text x={Number(x) + 8} y={Number(y) + 4} fill={C.ink} fontSize={12} fontWeight={600}>
+                        {fmtKg(data[last].kg)}
+                      </text>
+                    ) : null
+                  }
+                />
+              </Line>
+            </LineChart>
+          </ResponsiveContainer>
+        </figure>
+      }
+      table={
+        <table className="w-full text-sm tabular-nums">
+          <thead className="text-left text-xs text-muted">
+            <tr>
+              <th className="py-1 font-normal">Ciclo</th>
+              <th className="py-1 text-right font-normal">Maior carga</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {data.map((d) => (
+              <tr key={d.label}>
+                <td className="py-1.5">{d.label.replace('C', 'Ciclo ')}</td>
+                <td className="text-right">{fmtKg(d.kg)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      }
+    />
+  )
+}
+
 /** Séries concluídas por grupo muscular na semana (barras horizontais, uma cor). */
 export function WeeklyVolumeChart({ data }: { data: { group: MuscleGroup; sets: number }[] }) {
   const rows = data.map((d) => ({ ...d, label: MUSCLE_GROUP_PT[d.group] }))

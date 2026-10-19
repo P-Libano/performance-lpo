@@ -8,6 +8,7 @@ import {
   cellFromLog,
   cleanNum,
   closeCycle,
+  cycleSeries,
   cycleSummary,
   deltaVsFirst,
   deltaVsPrev,
@@ -15,6 +16,7 @@ import {
   oneRm,
   pctChange,
   tonnage,
+  weekSeries,
 } from './ciclo'
 
 describe('cleanNum (normalizeData do Chorão)', () => {
@@ -183,6 +185,19 @@ describe('grade do ciclo', () => {
     expect(g2.days[0].rows[1].cells.every((c) => c.kg === null && c.rpe === null)).toBe(true)
     expect(deltaVsPrev(g2.days[0].rows[0], 2)).toBeNull()
     expect(deltaVsPrev({ ...g2.days[0].rows[0], prev: [100, 105, 900, null] }, 2)).toBe(11)
+
+    // gráficos: semanas do ciclo contra o anterior, e a maior carga de cada ciclo
+    expect(weekSeries(g2.days[0].rows[0])).toEqual([
+      { week: 'S1', kg: null, prev: 100 },
+      { week: 'S2', kg: null, prev: 105 },
+      { week: 'S3', kg: 999, prev: null },
+      { week: 'S4', kg: null, prev: null },
+    ])
+    expect(cycleSeries([snap], g2.days[0].rows[0], 2)).toEqual([
+      { label: 'C1', kg: 105 },
+      { label: 'C2', kg: 999 },
+    ])
+    expect(cycleSeries([snap], g2.days[0].rows[1], 2)).toEqual([{ label: 'C1', kg: 80 }])
 
     const sum = cycleSummary(g2, snap)
     expect(sum.previous?.total).toBe(10764)

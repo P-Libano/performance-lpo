@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import { Link, Navigate } from 'react-router'
 import { PlateCalculator, WarmupRamp } from '../components/BarTools'
 import { ExerciseThumb } from '../components/ExerciseMedia'
 import { TreinoTabs } from '../components/TreinoTabs'
-import { Button, Chip, Screen, Sheet } from '../components/ui'
+import { Button, Chip, Icon, Screen, Sheet } from '../components/ui'
+
+// recharts só carrega ao abrir um gráfico
+const CycleChartSheet = lazy(() => import('../components/CycleChartSheet'))
 import { displayName } from '../data/catalog'
 import {
   aboveFirstWeek,
@@ -215,6 +218,7 @@ export default function CicloPage() {
   const [daySel, setDaySel] = useState<string | undefined>()
   const [editing, setEditing] = useState<Editing | null>(null)
   const [confirmCycle, setConfirmCycle] = useState(false)
+  const [charting, setCharting] = useState<GridRow | null>(null)
 
   if (program === null) return <Navigate to="/onboarding" replace />
   if (!program || !data || !byId) return <Screen title="Grade do ciclo">Carregando…</Screen>
@@ -271,6 +275,13 @@ export default function CicloPage() {
                 )}
                 <p className="min-w-0 flex-1 truncate font-medium">{name(row.exerciseId)}</p>
                 {row.role === 'principal' && <Chip tone="accent">Principal</Chip>}
+                <button
+                  onClick={() => setCharting(row)}
+                  aria-label={`Evolução de carga: ${name(row.exerciseId)}`}
+                  className="grid size-9 shrink-0 place-items-center rounded-full text-muted hover:bg-surface-2 hover:text-ink print:hidden"
+                >
+                  <Icon name="chart" className="size-4" />
+                </button>
               </div>
               <div className="mt-2 grid gap-1 text-center text-[11px] text-muted" style={cols}>
                 {grid.weekIndices.map((w, i) => (
@@ -304,6 +315,11 @@ export default function CicloPage() {
       </p>
 
       {editing && <CellEditor program={program} editing={editing} name={name(editing.row.exerciseId)} onClose={() => setEditing(null)} />}
+      {charting && (
+        <Suspense fallback={null}>
+          <CycleChartSheet row={charting} name={name(charting.exerciseId)} cycle={grid.cycle} history={data.history} onClose={() => setCharting(null)} />
+        </Suspense>
+      )}
       {confirmCycle && (
         <Sheet title={`Fechar o ciclo ${grid.cycle} e começar o ${grid.cycle + 1}?`} onClose={() => setConfirmCycle(false)}>
           <ul className="list-disc space-y-1 pl-5 text-sm text-ink/85">

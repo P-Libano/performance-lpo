@@ -257,6 +257,25 @@ export const snapshotsToPrune = (snaps: CycleSnapshot[]) =>
     .slice(0, Math.max(0, snaps.length - MAX_SNAPSHOTS))
     .map((s) => s.id!)
 
+/** Evolução do exercício na grade: uma entrada por semana, ciclo atual e o anterior. */
+export const weekSeries = (row: GridRow) => row.cells.map((c, i) => ({ week: `S${i + 1}`, kg: c.kg, prev: row.prev[i] }))
+
+/**
+ * Evolução entre ciclos: maior carga do exercício em cada ciclo fechado (do resumo) e no atual.
+ * Ciclos em que o exercício não aparece ficam de fora.
+ */
+export function cycleSeries(history: CycleSnapshot[], row: GridRow, current: number) {
+  const max = (xs: (number | null)[]) => {
+    const v = xs.filter((x): x is number => x !== null && x > 0)
+    return v.length ? Math.max(...v) : null
+  }
+  const past = [...history]
+    .sort((a, b) => a.cycle - b.cycle || a.closedAt - b.closedAt)
+    .map((s) => ({ cycle: s.cycle, kg: max(s.exercises.find((e) => e.dayKey === row.dayKey && e.exerciseId === row.exerciseId)?.kg ?? []) }))
+  const now = { cycle: current, kg: max(row.cells.map((c) => c.kg)) }
+  return [...past, now].filter((p) => p.kg !== null).map((p) => ({ label: `C${p.cycle}`, kg: p.kg as number }))
+}
+
 /** Resumo do ciclo: total do mês e variação contra o ciclo anterior. */
 export function cycleSummary(grid: Grid, previous?: CycleSnapshot) {
   return {
