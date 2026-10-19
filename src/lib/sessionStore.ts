@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import { activeDurationSec, buildSession, type Session, type SetLog } from '../domain/session'
+import type { TimerState } from '../domain/timer'
 import type { Program } from '../programacao/types'
 
 export async function getActiveSession(): Promise<Session | undefined> {
@@ -49,6 +50,7 @@ export const toggleSetDone = (id: number, ex: number, set: number, now = Date.no
       if (log.reps === null) log.reps = e.prescription.reps?.max ?? 1 // sem digitar = fez o alvo (condicionamento: 1 volta)
       s.restUntil = now + e.prescription.restSec * 1000
       s.restTotal = e.prescription.restSec
+      delete s.restPausedLeft
     } else {
       delete log.completedAt
     }
@@ -75,10 +77,12 @@ export const setWeightFrom = (id: number, ex: number, set: number, weight: numbe
     })
   })
 
-export const setRest = (id: number, until: number | undefined, total?: number) =>
+/** Estado do cronômetro de descanso da sessão (rodando, pausado ou parado). */
+export const setRest = (id: number, t: TimerState) =>
   mutate(id, (s) => {
-    s.restUntil = until
-    if (total !== undefined) s.restTotal = total
+    s.restUntil = t.until
+    s.restPausedLeft = t.pausedLeft
+    if (t.total !== undefined) s.restTotal = t.total
   })
 
 export const finishSession = (id: number, now = Date.now()) =>
@@ -87,6 +91,7 @@ export const finishSession = (id: number, now = Date.now()) =>
     s.finishedAt = now
     s.durationSec = activeDurationSec(s, now)
     s.restUntil = undefined
+    delete s.restPausedLeft
   })
 
 export const discardSession = (id: number) => db.sessions.delete(id)

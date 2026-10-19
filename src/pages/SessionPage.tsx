@@ -1,9 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { RestTimer } from '../components/RestTimer'
+import { RestTimer, TimerPresets } from '../components/RestTimer'
+import { startTimer, type TimerState } from '../domain/timer'
 import { SessionExerciseCard } from '../components/SessionExerciseCard'
-import { Button, Screen } from '../components/ui'
+import { Button, Icon, Screen } from '../components/ui'
 import { displayName } from '../data/catalog'
 import { fmtKg } from '../programacao/progression/common'
 import { db } from '../db'
@@ -42,7 +43,8 @@ export default function SessionPage() {
   const [confirm, setConfirm] = useState<'finish' | 'discard' | null>(null)
   const doneSessions = useLiveQuery(() => db.sessions.where('status').equals('done').toArray(), [])
 
-  const onRest = useCallback((until: number | undefined) => setRest(id, until), [id])
+  const onRest = useCallback((t: TimerState) => setRest(id, t), [id])
+  const [showPresets, setShowPresets] = useState(false)
 
   // abre o primeiro exercício com série pendente
   useEffect(() => {
@@ -144,10 +146,26 @@ export default function SessionPage() {
         </button>
       }
     >
-      <div className="mb-3 flex items-center justify-between text-sm">
+      <div className="mb-3 flex items-center justify-between gap-2 text-sm">
         <Elapsed since={session.startedAt} />
-        <span className="text-muted">{pending} séries restantes</span>
+        <span className="flex-1 text-muted">{pending} séries restantes</span>
+        <button
+          onClick={() => setShowPresets((v) => !v)}
+          aria-expanded={showPresets}
+          className="flex items-center gap-1 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm"
+        >
+          <Icon name="timer" className="size-4" /> Descanso
+        </button>
       </div>
+      {showPresets && (
+        <TimerPresets
+          className="mb-3"
+          onPick={(sec) => {
+            onRest(startTimer(sec))
+            setShowPresets(false)
+          }}
+        />
+      )}
 
       <div className="space-y-3">
         {groupIndices.map((gi) => {
@@ -206,9 +224,12 @@ export default function SessionPage() {
       <button onClick={() => setConfirm('discard')} className="mt-6 w-full py-3 text-sm text-danger/80 hover:text-danger">
         Descartar treino
       </button>
-      {session.restUntil && <div className="h-24" />}
+      {(session.restUntil || session.restPausedLeft !== undefined) && <div className="h-24" />}
 
-      <RestTimer until={session.restUntil} total={session.restTotal} onChange={onRest} />
+      <RestTimer
+        state={{ until: session.restUntil, total: session.restTotal, pausedLeft: session.restPausedLeft }}
+        onChange={onRest}
+      />
 
       {confirm && (
         <div className="fixed inset-0 z-40 grid place-items-center bg-black/60 px-6" role="dialog" aria-modal>
