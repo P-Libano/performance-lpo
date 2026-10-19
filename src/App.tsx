@@ -16,6 +16,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const AiRoutinePage = lazy(() => import('./pages/AiRoutinePage'))
 const AiReviewPage = lazy(() => import('./pages/AiReviewPage'))
 const CicloPage = lazy(() => import('./pages/CicloPage'))
+const FerramentasPage = lazy(() => import('./pages/FerramentasPage'))
 
 const Lazy = ({ title, children }: { title: string; children: ReactNode }) => (
   <Suspense fallback={<Screen title={title}>Carregando…</Screen>}>{children}</Suspense>
@@ -31,7 +32,7 @@ const TABS = [
 function BottomNav() {
   const { pathname } = useLocation()
   // a grade do ciclo é uma vista da aba Treino
-  const also = (to: string) => to === '/treino' && pathname.startsWith('/ciclo')
+  const also = (to: string) => to === '/treino' && (pathname.startsWith('/ciclo') || pathname.startsWith('/ferramentas'))
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur print:hidden">
       <ul className="mx-auto grid max-w-xl grid-cols-4">
@@ -87,6 +88,14 @@ export default function App() {
           element={
             <Lazy title="Grade do ciclo">
               <CicloPage />
+            </Lazy>
+          }
+        />
+        <Route
+          path="/ferramentas"
+          element={
+            <Lazy title="Ferramentas">
+              <FerramentasPage />
             </Lazy>
           }
         />

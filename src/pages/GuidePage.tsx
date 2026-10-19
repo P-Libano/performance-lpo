@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { RpeGuideTable } from '../components/BarTools'
 import { Screen } from '../components/ui'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -57,16 +58,8 @@ export default function GuidePage() {
         <p>
           Uma nota de 1 a 10 para o quão pesada foi a série, dada logo depois de terminar. Pense: <em>quantas reps ainda sobravam?</em>
         </p>
-        <Table
-          head={['RPE', 'Significa']}
-          rows={[
-            ['10', 'não saía mais nenhuma'],
-            ['9', 'sobrava 1'],
-            ['8', 'sobravam 2'],
-            ['7', 'sobravam 3'],
-            ['6 ou menos', 'leve'],
-          ]}
-        />
+        <RpeGuideTable />
+        <p className="text-muted">RIR = repetições em reserva (as que ainda sobravam).</p>
         <p>
           O 1RM é a régua fixa; o RPE mostra como você está <strong>hoje</strong>. Os mesmos 80 kg podem ser RPE 9 depois de uma
           noite ruim e RPE 7 num dia bom. No começo é comum dar nota alta demais — a calibração melhora em poucas semanas.

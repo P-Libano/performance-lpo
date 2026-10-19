@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router'
+import { PlateCalculator, WarmupRamp } from '../components/BarTools'
 import { ExerciseThumb } from '../components/ExerciseMedia'
 import { TreinoTabs } from '../components/TreinoTabs'
 import { Button, Chip, Screen, Sheet } from '../components/ui'
@@ -116,6 +117,7 @@ function CellEditor({ program, editing, name, onClose }: { program: Program; edi
   const str = (n: number | null) => (n === null ? '' : String(n).replace('.', ','))
   const [f, setF] = useState({ variant: c.variant, sets: str(c.sets), reps: str(c.reps), kg: str(c.kg), rpe: str(c.rpe) })
   const [busy, setBusy] = useState(false)
+  const [tool, setTool] = useState<'anilhas' | 'rampa' | null>(null)
   const parsed = { sets: cleanNum('sets', f.sets), reps: cleanNum('reps', f.reps), kg: cleanNum('kg', f.kg), rpe: cleanNum('rpe', f.rpe) }
   const e1rm = oneRm(parsed.reps, parsed.kg)
 
@@ -170,6 +172,21 @@ function CellEditor({ program, editing, name, onClose }: { program: Program; edi
           </>
         )}
       </p>
+      {parsed.kg !== null && parsed.kg > 0 && (
+        <div className="mt-2 flex gap-2 text-sm">
+          <button onClick={() => setTool(tool === 'anilhas' ? null : 'anilhas')} aria-expanded={tool === 'anilhas'} className="rounded-lg border border-line px-3 py-1.5">
+            Anilhas
+          </button>
+          <button onClick={() => setTool(tool === 'rampa' ? null : 'rampa')} aria-expanded={tool === 'rampa'} className="rounded-lg border border-line px-3 py-1.5">
+            Aquecimento
+          </button>
+        </div>
+      )}
+      {tool && parsed.kg && (
+        <div className="mt-2 rounded-xl border border-line bg-bg p-3">
+          {tool === 'anilhas' ? <PlateCalculator key={parsed.kg} initialKg={parsed.kg} /> : <WarmupRamp key={parsed.kg} initialKg={parsed.kg} />}
+        </div>
+      )}
       {!c.uniform && (
         <p className="mt-2 rounded-lg bg-warn/10 px-3 py-2 text-xs text-warn">
           As séries desta semana têm cargas ou reps diferentes. Salvar pela grade deixa todas iguais ({parsed.sets ?? 0}×{parsed.reps ?? '—'} com{' '}

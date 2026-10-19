@@ -19,6 +19,7 @@ import {
   removeLastSet,
   setReadiness,
   setRest,
+  setVariant,
   setWeightFrom,
   toggleSetDone,
   updateSet,
@@ -207,6 +208,7 @@ export default function SessionPage() {
               }}
               onAddSet={() => addSet(id, ex)}
               onRemoveSet={() => removeLastSet(id, ex)}
+              onVariant={(v) => setVariant(id, ex, v)}
             />
           ))
           if (kind === 'simples') return <div key={gi}>{cards}</div>

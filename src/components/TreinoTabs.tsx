@@ -12,6 +12,9 @@ export function TreinoTabs() {
       <NavLink to="/ciclo" className={cls}>
         Grade do ciclo
       </NavLink>
+      <NavLink to="/ferramentas" className={cls}>
+        Ferramentas
+      </NavLink>
     </nav>
   )
 }

@@ -89,7 +89,13 @@ export const setRest = (id: number, t: TimerState) =>
 /** Check-in de prontidão: grava e ajusta a carga sugerida (−5% com prontidão baixa). */
 export const setReadiness = (id: number, r: Readiness) => mutate(id, (s) => void applyReadiness(s, r))
 
-export const setSessionNotes = (id: number, notes: string) =>
+export const setVariant = (id: number, ex: number, v: string) =>
+  mutate(id, (s) => {
+    if (v) s.exercises[ex].variant = v.slice(0, 60)
+    else delete s.exercises[ex].variant
+  })
+
+export const setSessionNotes =(id: number, notes: string) =>
   mutate(id, (s) => {
     s.notes = notes.slice(0, 2000)
   })

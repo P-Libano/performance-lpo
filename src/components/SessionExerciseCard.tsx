@@ -7,8 +7,9 @@ import { fmtRest } from '../programacao/explain'
 import { contaFor, fromReference } from '../programacao/progression/carga'
 import { fmtKg, fmtReps, workingWeight } from '../programacao/progression/common'
 import type { SuggestionKind } from '../programacao/types'
+import { PlateCalculator, WarmupRamp } from './BarTools'
 import { ExerciseGif } from './ExerciseMedia'
-import { Icon } from './ui'
+import { Icon, Sheet } from './ui'
 
 /** Input numérico que aceita vírgula e só grava ao sair do campo/confirmar. */
 function NumberField({
@@ -131,6 +132,7 @@ export function SessionExerciseCard({
   onToggleDone,
   onAddSet,
   onRemoveSet,
+  onVariant,
 }: {
   index: number
   /** Ex.: "A1" em superset/circuito. */
@@ -146,9 +148,13 @@ export function SessionExerciseCard({
   onToggleDone: (set: number) => void
   onAddSet: () => void
   onRemoveSet: () => void
+  /** Variação executada (aparece na grade do ciclo). */
+  onVariant?: (v: string) => void
 }) {
+  const [tool, setTool] = useState<'anilhas' | 'rampa' | null>(null)
   const p = item.prescription
   const timed = !!p.workSec
+  const workKg = item.log.find((l) => !l.done && l.weight)?.weight ?? item.suggestion.weight ?? item.log[0]?.weight ?? null
   const doneCount = item.log.filter((l) => l.done).length
   const complete = doneCount >= p.sets
   const name = exercise ? displayName(exercise) : item.exerciseId
@@ -304,8 +310,28 @@ export function SessionExerciseCard({
               </Link>
             </p>
           )}
+          {!readOnly && onVariant && !timed && (
+            <input
+              defaultValue={item.variant ?? ''}
+              maxLength={60}
+              placeholder="Variação executada (opcional)"
+              aria-label="Variação executada"
+              onBlur={(e) => e.target.value.trim() !== (item.variant ?? '') && onVariant(e.target.value.trim())}
+              className="mt-2 h-10 w-full rounded-lg border border-line bg-bg px-3 text-sm outline-none focus:border-accent"
+            />
+          )}
           {!readOnly && (
-            <div className="mt-2 flex justify-end gap-2 text-sm">
+            <div className="mt-2 flex items-center justify-end gap-2 text-sm">
+              {!timed && !bodyweight && (
+                <span className="mr-auto flex gap-1">
+                  <button onClick={() => setTool('anilhas')} className="rounded-lg px-2 py-1.5 text-muted hover:bg-surface-2">
+                    Anilhas
+                  </button>
+                  <button onClick={() => setTool('rampa')} className="rounded-lg px-2 py-1.5 text-muted hover:bg-surface-2">
+                    Aquecimento
+                  </button>
+                </span>
+              )}
               <button onClick={onRemoveSet} className="rounded-lg px-3 py-1.5 text-muted hover:bg-surface-2">
                 − {timed ? 'volta' : 'série'}
               </button>
@@ -315,6 +341,11 @@ export function SessionExerciseCard({
             </div>
           )}
         </div>
+      )}
+      {tool && (
+        <Sheet eyebrow={tool === 'anilhas' ? 'Anilhas por lado' : 'Rampa de aquecimento'} title={name} onClose={() => setTool(null)}>
+          {tool === 'anilhas' ? <PlateCalculator initialKg={workKg} /> : <WarmupRamp initialKg={workKg} />}
+        </Sheet>
       )}
     </section>
   )
