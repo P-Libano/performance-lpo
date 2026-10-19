@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { META, db } from '../db'
 import type { Profile } from '../domain/profile'
+import { choraoTemplate } from '../programacao/chorao'
 import { generateProgram } from '../programacao/generator'
 import { swapInProgram } from '../programacao/program'
 import type { Program } from '../programacao/types'
@@ -40,6 +41,11 @@ export async function activateProgram(program: Program): Promise<number> {
     await db.meta.put({ key: META.activeProgram, value: id })
     return id
   })
+}
+
+/** Ativa o template "LPO + Musculação" (plano inicial do Chorão). */
+export async function activateChoraoTemplate(): Promise<number> {
+  return activateProgram(choraoTemplate().program)
 }
 
 /** Troca o exercício (grupo, item) do dia em todas as semanas do programa. */

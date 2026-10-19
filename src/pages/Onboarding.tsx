@@ -16,7 +16,8 @@ import {
   type Profile,
   type Split,
 } from '../domain/profile'
-import { saveProfileAndGenerate, useProfile } from '../lib/programStore'
+import { activateChoraoTemplate, saveProfileAndGenerate, useProfile } from '../lib/programStore'
+import { TEMPLATE_NAME } from '../programacao/chorao'
 import { GOALS, recommendedSplitFor } from '../programacao/goals'
 import { GOAL_IDS } from '../programacao/types'
 
@@ -114,6 +115,32 @@ export default function Onboarding() {
           Cinco perguntas e o Progressa monta sua rotina. Dá para ajustar tudo depois.
         </p>
       )}
+
+      <section className="mb-7 rounded-2xl border border-accent/30 bg-accent/5 p-4">
+        <p className="eyebrow text-accent">Plano pronto</p>
+        <h2 className="display mt-1 font-semibold">{TEMPLATE_NAME}</h2>
+        <p className="mt-1 text-sm text-muted">
+          O plano do Chorão: snatch, clean e jerk no início do treino e musculação depois, 4 dias por semana, ciclos de 4 semanas
+          registrados na grade S1–S4. Para quem já tem técnica de LPO.
+        </p>
+        <Button
+          variant="ghost"
+          className="mt-3 w-full"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            try {
+              await activateChoraoTemplate()
+              navigate('/treino', { replace: true })
+            } finally {
+              setBusy(false)
+            }
+          }}
+        >
+          Usar o plano {TEMPLATE_NAME}
+        </Button>
+      </section>
+      <p className="mb-4 text-sm font-medium text-muted">Ou monte pelo seu objetivo (AB, ABC e outras divisões):</p>
 
       <Section n={1} title="Objetivo">
         <div className="grid gap-2">

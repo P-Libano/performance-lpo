@@ -244,6 +244,8 @@ export interface ExercisePrescription {
   rpe?: Range
   /** Condicionamento: tempo de trabalho/descanso por estação. */
   workSec?: number
+  /** Carga inicial do plano (templates): vale enquanto não houver histórico do exercício. */
+  startKg?: number
 }
 
 export interface ExerciseGroup {

@@ -71,7 +71,12 @@ export function buildSession(
         ...(suggestion.reps ? { reps: suggestion.reps } : {}),
       }
       const previous = history.at(-1)
-      const weight = suggestion.weight ?? previous?.sets[0]?.weight ?? null
+      // template com carga inicial: vale até existir histórico do exercício
+      const planned = !previous && suggestion.kind === 'start' && item.startKg ? item.startKg : null
+      const finalSuggestion = planned
+        ? { ...suggestion, weight: planned, reason: `Carga inicial do plano: ${planned.toLocaleString('pt-BR')} kg. ${suggestion.reason}` }
+        : suggestion
+      const weight = finalSuggestion.weight ?? previous?.sets[0]?.weight ?? null
       return {
         exerciseId: item.exerciseId,
         role: item.role,
@@ -79,7 +84,7 @@ export function buildSession(
         groupIndex,
         groupKind: g.kind,
         prescription,
-        suggestion,
+        suggestion: finalSuggestion,
         previous,
         recent: history.slice(-3),
         log: Array.from({ length: prescription.sets }, (): SetLog => ({ weight, reps: null, rpe: null, done: false })),
@@ -96,6 +101,7 @@ export function buildSession(
     status: 'active',
     exerciseIds: [...new Set(exercises.map((e) => e.exerciseId))],
     exercises,
+    cycle: program.currentCycle ?? 1,
   }
 }
 

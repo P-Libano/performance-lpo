@@ -37,6 +37,7 @@ const prescription = z.object({
   pct1rm: range.optional(),
   rpe: range.optional(),
   workSec: z.number().int().optional(),
+  startKg: num.optional(),
 })
 
 const programSchema = z.object({

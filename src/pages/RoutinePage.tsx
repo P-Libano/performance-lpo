@@ -69,6 +69,7 @@ export default function RoutinePage() {
             </span>
             <span className="text-sm text-muted">
               <span className="font-semibold text-ink">{prescriptionLabel(it)}</span>
+              {it.startKg ? ` · ${it.startKg.toLocaleString('pt-BR')} kg` : ''}
               {it.workSec ? ` · pausa ${it.restSec}s` : ` · descanso ${fmtRest(it.restSec)}`}
             </span>
             <span className="mt-1 flex flex-wrap gap-1">
@@ -113,11 +114,21 @@ export default function RoutinePage() {
       }
     >
       <div className="flex flex-wrap gap-1.5">
-        <Chip tone="accent">{GOAL_PT[p.goal]}</Chip>
-        <Chip>{p.daysPerWeek}x/semana</Chip>
-        <Chip>{SPLIT_PT[p.split]}</Chip>
-        <Chip>{EQUIPMENT_ACCESS_PT[p.equipment]}</Chip>
-        <Chip>{LEVEL_PT[p.level]}</Chip>
+        {program.source === 'template' ? (
+          <>
+            <Chip tone="accent">{program.templateName}</Chip>
+            <Chip>{p.daysPerWeek}x/semana</Chip>
+            <Chip>Ciclo {program.currentCycle ?? 1}</Chip>
+          </>
+        ) : (
+          <>
+            <Chip tone="accent">{GOAL_PT[p.goal]}</Chip>
+            <Chip>{p.daysPerWeek}x/semana</Chip>
+            <Chip>{SPLIT_PT[p.split]}</Chip>
+            <Chip>{EQUIPMENT_ACCESS_PT[p.equipment]}</Chip>
+            <Chip>{LEVEL_PT[p.level]}</Chip>
+          </>
+        )}
         {program.source === 'ia' && <Chip tone="accent">IA</Chip>}
       </div>
 
@@ -215,6 +226,7 @@ export default function RoutinePage() {
         <h2 className="display text-lg font-bold">{day.name}</h2>
         {day.key === nextDay && <span className="text-xs text-accent">Próximo treino</span>}
       </div>
+      {day.notes && <p className="mt-1 text-sm text-muted">{day.notes}</p>}
 
       <div className="mt-2 space-y-2">{day.groups.map(groupBlock)}</div>
 
