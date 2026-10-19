@@ -61,6 +61,11 @@ export interface Exercise {
   source?: 'custom'
   /** Passo a passo em pt-BR (só exercícios próprios). */
   stepsPt?: string[]
-  /** Animação própria (vetorial) no lugar do GIF do dataset. */
+  /** Animação própria (vetorial): reserva quando os GIFs não carregam. */
   animation?: string
+  /**
+   * LPO sem GIF próprio no dataset: GIFs de partes do movimento (ex.: snatch pull → overhead squat),
+   * tocados em sequência. `from` = id do exercício do dataset de onde vem a mídia.
+   */
+  parts?: { from: string; gif: string; image: string; label: string }[]
 }

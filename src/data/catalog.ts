@@ -1,6 +1,6 @@
 import { META, db } from '../db'
 import { CURATED_BY_ID } from './curated'
-import { LPO_EXERCISES } from './lpo'
+import { LPO_MEDIA_IDS, lpoWithMedia } from './lpo'
 import type { Exercise, RawExercise } from './types'
 
 export const DATASET_CDN = 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main'
@@ -49,8 +49,15 @@ async function download(): Promise<Exercise[]> {
   return raw.map(slimExercise)
 }
 
-/** Exercícios próprios do app sempre presentes (os criados pelo usuário/importação ficam na tabela). */
-const ensureCustom = () => db.exercises.bulkPut([...LPO_EXERCISES])
+/**
+ * Exercícios próprios do app sempre presentes (os criados pelo usuário/importação ficam na tabela).
+ * Os LPO recebem a mídia das partes a partir dos exercícios do dataset já gravados.
+ */
+async function ensureCustom() {
+  const rows = await db.exercises.bulkGet([...LPO_MEDIA_IDS])
+  const byId = new Map(rows.filter((r): r is Exercise => !!r).map((r) => [r.id, r]))
+  await db.exercises.bulkPut(lpoWithMedia((id) => byId.get(id)))
+}
 
 async function store(list: Exercise[]) {
   await db.transaction('rw', db.exercises, db.meta, async () => {

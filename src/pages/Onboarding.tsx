@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { APP_NAME, APP_TAGLINE } from '../brand'
 import { BrandLockup } from '../components/Brand'
+import { ExerciseGif } from '../components/ExerciseMedia'
 import { LpoAnimation } from '../components/LpoAnimation'
+import { useExercise } from '../lib/useCatalog'
 import { Button, Screen } from '../components/ui'
 import {
   DEFAULT_PULLUP_BAR,
@@ -87,6 +89,7 @@ function Welcome({ onCustom }: { onCustom: () => void }) {
   const file = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
+  const snatch = useExercise('lpo-snatch-chao')
 
   const go = async (fn: () => Promise<unknown>) => {
     setBusy(true)
@@ -122,8 +125,12 @@ function Welcome({ onCustom }: { onCustom: () => void }) {
       <BrandLockup className="h-9" />
       <h1 className="display mt-5 text-2xl leading-tight font-bold">{APP_TAGLINE}</h1>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-line">
-        <LpoAnimation id="snatch" className="aspect-[4/3] w-full" />
+      <div className="mt-4 flex justify-center">
+        {snatch ? (
+          <ExerciseGif exercise={snatch} className="w-full max-w-[300px]" />
+        ) : (
+          <LpoAnimation id="snatch" className="aspect-square w-full max-w-[300px] rounded-xl" />
+        )}
       </div>
 
       <ul className="mt-4 space-y-1.5 text-sm text-ink/85">

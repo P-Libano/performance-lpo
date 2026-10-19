@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { APP_NAME } from '../brand'
 import { MEDIA_ATTRIBUTION, mediaUrl } from '../data/catalog'
-import type { LpoAnimation as LpoId } from '../data/lpo'
+import { LPO_BY_ID, type LpoAnimation as LpoId } from '../data/lpo'
 import type { Exercise } from '../data/types'
+import { GifSequence } from './GifSequence'
 import { LpoAnimation } from './LpoAnimation'
 
 /** Miniatura (jpg) para listas. */
 export function ExerciseThumb({ exercise, size = 56 }: { exercise: Exercise; size?: number }) {
   const [failed, setFailed] = useState(false)
-  if (exercise.animation) {
+  // LPO: miniatura do dataset (1ª parte); sem ela, quadro da animação própria
+  if (exercise.animation && (failed || !exercise.image)) {
     return <LpoAnimation id={exercise.animation as LpoId} still className="shrink-0 rounded-lg" style={{ width: size, height: size }} />
   }
   if (failed || !exercise.image) {
@@ -43,11 +45,27 @@ export function ExerciseThumb({ exercise, size = 56 }: { exercise: Exercise; siz
 /** GIF de execução com a atribuição exigida pela licença da mídia (Gym visual). */
 export function ExerciseGif({ exercise, className = '' }: { exercise: Exercise; className?: string }) {
   const [failed, setFailed] = useState(false)
+  const alt = `Execução: ${exercise.namePt ?? exercise.name}`
+  // LPO: GIFs do dataset das partes do movimento, em sequência
+  if (exercise.parts?.length && !failed) {
+    return (
+      <figure className={className}>
+        <GifSequence parts={exercise.parts} alt={alt} onFail={() => setFailed(true)} />
+        <figcaption className="mt-1 space-y-0.5 text-[10px] leading-snug text-muted">
+          {LPO_BY_ID.get(exercise.id)?.mediaNote && <span className="block">{LPO_BY_ID.get(exercise.id)!.mediaNote}</span>}
+          <a href="https://gymvisual.com/" target="_blank" rel="noreferrer" className="block hover:underline">
+            {exercise.attribution || MEDIA_ATTRIBUTION}
+          </a>
+        </figcaption>
+      </figure>
+    )
+  }
+  // reserva: animação própria (GIFs indisponíveis, ex.: offline no primeiro acesso)
   if (exercise.animation) {
     return (
       <figure className={className}>
         <LpoAnimation id={exercise.animation as LpoId} className="aspect-square w-full max-w-[360px] rounded-xl" />
-        <figcaption className="mt-1 text-[10px] text-muted">Animação ilustrativa do {APP_NAME}</figcaption>
+        <figcaption className="mt-1 text-[10px] text-muted">Animação ilustrativa do {APP_NAME} (GIF indisponível agora)</figcaption>
       </figure>
     )
   }
@@ -69,7 +87,7 @@ export function ExerciseGif({ exercise, className = '' }: { exercise: Exercise; 
       ) : (
         <img
           src={mediaUrl(exercise.gif)}
-          alt={`Execução: ${exercise.namePt ?? exercise.name}`}
+          alt={alt}
           width={180}
           height={180}
           onError={() => setFailed(true)}

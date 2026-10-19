@@ -3,15 +3,33 @@ import type { Exercise } from './types'
 
 /**
  * Levantamentos olímpicos (LPO) que o dataset não tem: entradas próprias, com nome e passo a passo
- * em pt-BR e animação vetorial do app no lugar do GIF. Ids com prefixo "lpo-" (nunca colidem com o
- * dataset, que usa 4 dígitos).
+ * em pt-BR. A mídia vem do próprio dataset, por partes: GIFs de movimentos que compõem o LPO
+ * (ex.: snatch pull + overhead squat), tocados em sequência — mesmo estilo dos demais exercícios.
+ * A animação vetorial do app fica de reserva (GIF indisponível). Ids com prefixo "lpo-" (nunca
+ * colidem com o dataset, que usa 4 dígitos).
  */
 
 export type LpoAnimation = 'snatch' | 'snatch-hang' | 'clean' | 'jerk' | 'pull'
 
+/** Parte do movimento: exercício do dataset cuja mídia mostra aquele trecho. */
+export interface LpoPart {
+  id: string
+  label: string
+}
+
+/** GIFs do dataset usados nas montagens (todos existem no dataset; ver lpo.test). */
+const SNATCH_PULL: LpoPart = { id: '0776', label: 'Puxada (snatch pull)' }
+const OVERHEAD_SQUAT: LpoPart = { id: '0069', label: 'Recepção: agachamento overhead' }
+const POWER_CLEAN: LpoPart = { id: '0648', label: 'Puxada e encaixe (power clean)' }
+const FRONT_SQUAT: LpoPart = { id: '0029', label: 'Recepção: agachamento frontal' }
+const SQUAT_JERK: LpoPart = { id: '0786', label: 'Jerk (recepção em agachamento)' }
+
 interface LpoDef extends CuratedExercise {
   name: string
   animation: LpoAnimation
+  parts: LpoPart[]
+  /** O que a montagem não mostra (aparece sob o GIF). */
+  mediaNote?: string
   bodyPart: Exercise['bodyPart']
   target: string
   secondary: string[]
@@ -36,6 +54,8 @@ export const LPO_DEFS: readonly LpoDef[] = [
     compound: true,
     principal: true,
     animation: 'snatch',
+    parts: [SNATCH_PULL, OVERHEAD_SQUAT],
+    mediaNote: 'Montagem com GIFs do dataset: a puxada e a recepção. A passagem da barra do quadril para cima da cabeça não aparece.',
     bodyPart: 'upper legs',
     target: 'glutes',
     secondary: ['hamstrings', 'quadriceps', 'traps', 'delts'],
@@ -56,6 +76,9 @@ export const LPO_DEFS: readonly LpoDef[] = [
     compound: true,
     principal: true,
     animation: 'snatch-hang',
+    parts: [SNATCH_PULL, OVERHEAD_SQUAT],
+    mediaNote:
+      'Montagem com GIFs do dataset: a puxada (que no GIF sai do chão; no suspenso, comece com a barra acima dos joelhos) e a recepção.',
     bodyPart: 'upper legs',
     target: 'glutes',
     secondary: ['hamstrings', 'quadriceps', 'traps', 'delts'],
@@ -76,6 +99,8 @@ export const LPO_DEFS: readonly LpoDef[] = [
     compound: true,
     principal: true,
     animation: 'clean',
+    parts: [POWER_CLEAN, FRONT_SQUAT],
+    mediaNote: 'Montagem com GIFs do dataset: power clean (encaixe em pé) e o agachamento frontal da recepção completa.',
     bodyPart: 'upper legs',
     target: 'glutes',
     secondary: ['hamstrings', 'quadriceps', 'traps', 'calves'],
@@ -96,6 +121,8 @@ export const LPO_DEFS: readonly LpoDef[] = [
     compound: true,
     principal: true,
     animation: 'jerk',
+    parts: [SQUAT_JERK],
+    mediaNote: 'GIF do dataset: squat jerk (recepção em agachamento). No split jerk, a recepção é com uma perna à frente e outra atrás.',
     bodyPart: 'shoulders',
     target: 'delts',
     secondary: ['triceps', 'quadriceps', 'glutes', 'core'],
@@ -116,6 +143,8 @@ export const LPO_DEFS: readonly LpoDef[] = [
     compound: true,
     principal: false,
     animation: 'pull',
+    parts: [{ ...SNATCH_PULL, label: 'Tripla extensão (snatch pull)' }],
+    mediaNote: 'GIF do dataset: snatch pull, a puxada completa até a extensão.',
     bodyPart: 'upper legs',
     target: 'glutes',
     secondary: ['hamstrings', 'quadriceps', 'traps', 'calves'],
@@ -135,6 +164,8 @@ export const LPO_DEFS: readonly LpoDef[] = [
     compound: true,
     principal: false,
     animation: 'snatch-hang',
+    parts: [{ ...OVERHEAD_SQUAT, label: 'Agachamento overhead' }],
+    mediaNote: 'GIF do dataset: agachamento overhead, uma das variações auxiliares do arranco.',
     bodyPart: 'upper legs',
     target: 'glutes',
     secondary: ['hamstrings', 'quadriceps', 'traps', 'delts'],
@@ -165,6 +196,25 @@ export const LPO_EXERCISES: readonly Exercise[] = LPO_DEFS.map((d) => ({
   stepsPt: d.steps,
   animation: d.animation,
 }))
+
+/** Ids do dataset cuja mídia os LPO usam. */
+export const LPO_MEDIA_IDS: readonly string[] = [...new Set(LPO_DEFS.flatMap((d) => d.parts.map((p) => p.id)))]
+
+/**
+ * LPO com a mídia das partes, tirada dos exercícios do dataset (caminhos e atribuição vêm de lá, então
+ * acompanham atualizações do dataset). Parte sem par no catálogo fica de fora; sem nenhuma, só a animação.
+ */
+export function lpoWithMedia(datasetById: (id: string) => Exercise | undefined): Exercise[] {
+  return LPO_EXERCISES.map((e) => {
+    const parts = LPO_BY_ID.get(e.id)!
+      .parts.map((p) => ({ p, src: datasetById(p.id) }))
+      .filter((x): x is { p: LpoPart; src: Exercise } => !!x.src?.gif)
+      .map(({ p, src }) => ({ from: src.id, gif: src.gif, image: src.image, label: p.label }))
+    if (!parts.length) return e
+    const first = datasetById(parts[0].from)!
+    return { ...e, image: parts[0].image, gif: parts[0].gif, attribution: first.attribution, parts }
+  })
+}
 
 /** Metadados curados de um id do dataset ou dos LPO próprios. */
 export const curatedInfo = (id: string): CuratedExercise | undefined => CURATED_BY_ID.get(id) ?? LPO_BY_ID.get(id)
