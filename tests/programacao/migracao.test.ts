@@ -117,12 +117,12 @@ describe('backup: formato 1 → 2 e ida e volta', () => {
     await importData(parseBackup(text))
     const export2 = await exportData(new Date('2026-10-15T10:00:00Z'))
     expect(export2).toEqual(export1)
-    expect(export2.format).toBe(2)
+    expect(export2.format).toBe(3) // formato atual (porte do Chorão)
     expect(export2.sessions[0].exercises[0].log[0].rpe).toBeNull()
   })
 
   it('rejeita formato desconhecido e v1 inválido com mensagem amigável', () => {
-    expect(() => parseBackup(JSON.stringify({ app: 'progressa', format: 9 }))).toThrow('lê os formatos 1 e 2')
+    expect(() => parseBackup(JSON.stringify({ app: 'progressa', format: 9 }))).toThrow('lê os formatos 1 a 3')
     const bad = JSON.parse(v1)
     bad.sessions[0].exercises[0].log[0].reps = 'doze'
     expect(() => parseBackup(JSON.stringify(bad))).toThrow(/sessions\.0\.exercises\.0\.log\.0\.reps/)

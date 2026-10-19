@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
+import { BackupReminder } from '../components/BackupReminder'
 import { ExerciseThumb } from '../components/ExerciseMedia'
 import { SwapSheet } from '../components/SwapSheet'
 import { TreinoTabs } from '../components/TreinoTabs'
@@ -116,6 +117,7 @@ export default function RoutinePage() {
       }
     >
       <TreinoTabs />
+      <BackupReminder />
       <div className="flex flex-wrap gap-1.5">
         {program.source === 'template' ? (
           <>

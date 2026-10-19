@@ -10,10 +10,11 @@ import { z } from './zod'
 /**
  * Backup dos dados do usuário: perfil, programas e sessões.
  * Fica de fora o catálogo (é rebaixado do CDN) e a chave da API (segredo local).
- * Formato 2 (atual). O formato 1 (rotinas sem semanas) é aceito e migrado.
+ * Formato 3 (atual: o 2 mais ciclos, prontidão, observações e exercícios próprios). O 2 é lido como está;
+ * o 1 (rotinas sem semanas) é aceito e migrado. Backups do Chorão são outra rota (lib/choraoStore).
  */
 
-export const BACKUP_FORMAT = 2
+export const BACKUP_FORMAT = 3
 
 const group = z.enum(MUSCLE_GROUPS)
 const num = z.number().finite()
@@ -141,7 +142,8 @@ const sessionSchema = z.object({
 
 export const backupSchema = z.object({
   app: z.literal('progressa'),
-  format: z.literal(2),
+  // 3 = porte do Chorão (ciclos, prontidão etc.); o 2 tem o mesmo formato sem esses campos
+  format: z.union([z.literal(2), z.literal(3)]),
   exportedAt: z.string(),
   profile: profileSchema.nullable(),
   activeProgramId: z.number().int().nullable(),
@@ -231,7 +233,7 @@ export async function exportData(now = new Date()): Promise<Backup> {
   ])
   return {
     app: 'progressa',
-    format: 2,
+    format: BACKUP_FORMAT,
     exportedAt: now.toISOString(),
     profile: (profile?.value as Backup['profile']) ?? null,
     activeProgramId: (active?.value as number | undefined) ?? null,
@@ -250,12 +252,6 @@ export async function exportBackupFile(now = new Date()): Promise<Backup> {
   return data
 }
 
-/** Dias desde o último backup (null = nunca). */
-export async function daysSinceBackup(now = Date.now()): Promise<number | null> {
-  const last = (await db.meta.get(META.lastBackupAt))?.value as number | undefined
-  return last ? Math.floor((now - last) / 864e5) : null
-}
-
 export class BackupError extends Error {}
 
 const issueText = (e: z.ZodError) => {
@@ -263,7 +259,7 @@ const issueText = (e: z.ZodError) => {
   return `Backup inválido em "${issue.path.map(String).join('.') || 'raiz'}": ${issue.message}`
 }
 
-/** Valida o JSON (formato 1 ou 2) e devolve sempre o formato 2. Mensagens amigáveis em pt-BR. */
+/** Valida o JSON (formato 1, 2 ou 3) e devolve o formato atual. Mensagens amigáveis em pt-BR. */
 export function parseBackup(text: string, equipmentOf: EquipmentLookup = () => undefined): Backup & { migratedFrom?: 1 } {
   let raw: unknown
   try {
@@ -281,7 +277,7 @@ export function parseBackup(text: string, equipmentOf: EquipmentLookup = () => u
     const b = v1.data
     return {
       app: 'progressa',
-      format: 2,
+      format: BACKUP_FORMAT,
       exportedAt: b.exportedAt,
       profile: b.profile,
       activeProgramId: b.activeRoutineId,
@@ -290,8 +286,8 @@ export function parseBackup(text: string, equipmentOf: EquipmentLookup = () => u
       migratedFrom: 1,
     }
   }
-  if (format !== BACKUP_FORMAT) {
-    throw new BackupError(`Versão de backup não suportada (o app lê os formatos 1 e ${BACKUP_FORMAT}).`)
+  if (format !== 2 && format !== BACKUP_FORMAT) {
+    throw new BackupError(`Versão de backup não suportada (o app lê os formatos 1 a ${BACKUP_FORMAT}).`)
   }
   const parsed = backupSchema.safeParse(raw)
   if (!parsed.success) throw new BackupError(issueText(parsed.error))

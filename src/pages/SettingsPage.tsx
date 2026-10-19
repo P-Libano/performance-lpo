@@ -6,7 +6,10 @@ import { Button, Screen } from '../components/ui'
 import { MEDIA_ATTRIBUTION } from '../data/catalog'
 import { db } from '../db'
 import { BackupError, exportBackupFile, importData, parseBackup, wipeUserData } from '../lib/backup'
+import { ChoraoImportError, choraoInThisBrowser, importChorao } from '../lib/choraoStore'
 import { getTheme, setTheme, type ThemeChoice } from '../lib/theme'
+import { TEMPLATE_NAME } from '../programacao/chorao'
+import { isChoraoBackup } from '../programacao/choraoImport'
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -28,17 +31,41 @@ export default function SettingsPage() {
   const [msg, setMsg] = useState<Msg>(null)
   const [confirmWipe, setConfirmWipe] = useState(false)
   const [theme, setThemeState] = useState<ThemeChoice>(getTheme)
+  const [choraoLocal] = useState(choraoInThisBrowser)
 
   const onExport = async () => {
     const data = await exportBackupFile()
     setMsg({ tone: 'ok', text: `Backup gerado: ${data.sessions.length} sessões, ${data.programs.length} programas.` })
   }
 
+  const fromChorao = async (raw: unknown) => {
+    const r = await importChorao(raw)
+    setMsg({
+      tone: 'ok',
+      text:
+        `Chorão importado como novo programa “${TEMPLATE_NAME}” (ativo): ${r.exercises} exercícios, ${r.sessions} treinos na grade` +
+        (r.hasPrevious ? ', cargas do ciclo anterior como “Ant.”' : '') +
+        (r.created.length ? `. Criados sem par no catálogo: ${r.created.join(', ')}.` : '. Todos os exercícios casaram com o catálogo.') +
+        ' Seus dados anteriores continuam aqui.',
+    })
+  }
+
   const onImport = async (f: File) => {
     try {
+      const text = await f.text()
+      let raw: unknown = null
+      try {
+        raw = JSON.parse(text)
+      } catch {
+        // parseBackup dá a mensagem de JSON inválido
+      }
+      if (isChoraoBackup(raw)) {
+        await fromChorao(raw)
+        return
+      }
       const equipment = new Map<string, string>()
       await db.exercises.each((e) => equipment.set(e.id, e.equipment))
-      const b = parseBackup(await f.text(), (id) => equipment.get(id))
+      const b = parseBackup(text, (id) => equipment.get(id))
       const r = await importData(b)
       setMsg({
         tone: 'ok',
@@ -47,7 +74,7 @@ export default function SettingsPage() {
           (b.migratedFrom ? ' Backup antigo convertido para o formato atual.' : ''),
       })
     } catch (e) {
-      setMsg({ tone: 'error', text: e instanceof BackupError ? e.message : 'Não foi possível importar o arquivo.' })
+      setMsg({ tone: 'error', text: e instanceof BackupError || e instanceof ChoraoImportError ? e.message : 'Não foi possível importar o arquivo.' })
     } finally {
       if (file.current) file.current.value = ''
     }
@@ -78,7 +105,19 @@ export default function SettingsPage() {
           aria-label="Arquivo de backup"
           onChange={(e) => e.target.files?.[0] && onImport(e.target.files[0])}
         />
-        <p className="mt-2 text-xs text-muted">Importar substitui o perfil, as rotinas e o histórico atuais.</p>
+        <p className="mt-2 text-xs text-muted">
+          Importar um backup do Progressa substitui o perfil, as rotinas e o histórico atuais. Um backup do CHORÃO PERFORMANCE (JSON exportado
+          por ele) entra como programa novo, sem apagar nada.
+        </p>
+        {choraoLocal !== null && (
+          <Button
+            variant="ghost"
+            className="mt-2 w-full"
+            onClick={() => fromChorao(choraoLocal).catch((e) => setMsg({ tone: 'error', text: e instanceof Error ? e.message : String(e) }))}
+          >
+            Importar o Chorão deste navegador
+          </Button>
+        )}
         {msg && (
           <p role="status" className={`mt-3 rounded-lg px-3 py-2 text-sm ${msg.tone === 'ok' ? 'bg-accent/10 text-accent' : 'bg-danger/10 text-danger'}`}>
             {msg.text}

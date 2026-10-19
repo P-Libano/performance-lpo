@@ -417,10 +417,10 @@ export interface CycleSnapshot {
 
 // ───────────────────────── Backup ─────────────────────────
 
-/** Formato 2 do backup. O import aceita o formato 1 e migra (ver docs/programacao.md). */
+/** Backup (formato 3; o 2 tem o mesmo shape sem os campos opcionais). O import aceita o formato 1 e migra. */
 export interface BackupV2 {
   app: 'progressa'
-  format: 2
+  format: 2 | 3
   exportedAt: string
   profile: UserProfile | null
   activeProgramId: number | null
