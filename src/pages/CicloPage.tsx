@@ -15,11 +15,13 @@ import {
   deltaVsFirst,
   deltaVsPrev,
   oneRm,
+  sessionCycle,
   tonnage,
   type Cell,
   type Grid,
   type GridRow,
 } from '../domain/ciclo'
+import { isLow, readinessScore } from '../domain/readiness'
 import { exportBackupFile } from '../lib/backup'
 import { setCell, startNewCycle, useCycleGrid } from '../lib/cicloStore'
 import { useActiveProgram } from '../lib/programStore'
@@ -309,6 +311,30 @@ export default function CicloPage() {
           </span>
         ))}
       </div>
+      {(() => {
+        const notes = data.sessions
+          .filter((s) => sessionCycle(s) === grid.cycle && s.dayKey === day.key && (s.notes?.trim() || s.readiness))
+          .sort((a, b) => a.weekIndex - b.weekIndex)
+        if (!notes.length) return null
+        return (
+          <section className="mt-3 rounded-xl border border-line bg-surface p-3">
+            <h3 className="text-sm font-medium text-muted">Observações e prontidão · {day.key}</h3>
+            <ul className="mt-1 space-y-1.5 text-sm">
+              {notes.map((s) => (
+                <li key={s.id}>
+                  <Link to={`/sessao/${s.id}`} className="hover:underline">
+                    <span className="font-semibold">S{grid.weekIndices.indexOf(s.weekIndex) + 1}</span>
+                    {s.readiness && (
+                      <span className={isLow(s.readiness) ? 'text-warn' : 'text-muted'}> · prontidão {readinessScore(s.readiness).toLocaleString('pt-BR')}/5</span>
+                    )}
+                    {s.notes?.trim() && <span className="text-ink/85"> · {s.notes.trim()}</span>}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      })()}
       <p className="mt-2 text-xs text-muted">
         Toque numa semana para registrar séries, reps, carga, RPE e a variação feita. A grade lê e grava as mesmas sessões do treino:
         a progressão e o histórico usam tudo o que entrar aqui.

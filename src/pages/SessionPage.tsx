@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ReadinessCard } from '../components/ReadinessCard'
+import { SessionNotes } from '../components/SessionNotes'
 import { RestTimer, TimerPresets } from '../components/RestTimer'
 import { startTimer, type TimerState } from '../domain/timer'
 import { SessionExerciseCard } from '../components/SessionExerciseCard'
@@ -19,6 +20,7 @@ import {
   removeLastSet,
   setReadiness,
   setRest,
+  setSessionNotes,
   setVariant,
   setWeightFrom,
   toggleSetDone,
@@ -133,6 +135,7 @@ export default function SessionPage() {
             )
           })}
         </ul>
+        <SessionNotes value={session.notes} onSave={(v) => setSessionNotes(id, v)} />
         <Button className="mt-5 w-full" onClick={() => navigate('/treino')}>
           Voltar para a rotina
         </Button>
@@ -225,6 +228,8 @@ export default function SessionPage() {
           )
         })}
       </div>
+
+      <SessionNotes value={session.notes} onSave={(v) => setSessionNotes(id, v)} />
 
       <button onClick={() => setConfirm('discard')} className="mt-6 w-full py-3 text-sm text-danger/80 hover:text-danger">
         Descartar treino
