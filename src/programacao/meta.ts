@@ -1,4 +1,5 @@
 import { ADVANCED_IDS, CURATED, NEEDS_BAR_IDS, type CuratedExercise, type MuscleGroup } from '../data/curated'
+import { LPO_DEFS } from '../data/lpo'
 import type { ExerciseMeta, MuscleMass } from './types'
 
 /**
@@ -71,7 +72,20 @@ export function metaFor(c: CuratedExercise): ExerciseMeta {
   }
 }
 
-export const META: readonly ExerciseMeta[] = CURATED.map(metaFor)
+/** LPO próprios: técnicos (avançado), bilaterais e feitos em poucas reps. */
+const lpoMeta = (d: (typeof LPO_DEFS)[number]): ExerciseMeta => ({
+  id: d.id,
+  pt: d.pt,
+  group: d.group,
+  pattern: d.pattern,
+  role: d.principal ? 'principal' : 'composto',
+  unilateral: false,
+  massaMuscular: MASS[d.group],
+  adequadoBaixasReps: true,
+  avancado: true,
+})
+
+export const META: readonly ExerciseMeta[] = [...CURATED.map(metaFor), ...LPO_DEFS.map(lpoMeta)]
 export const META_BY_ID: ReadonlyMap<string, ExerciseMeta> = new Map(META.map((m) => [m.id, m]))
 
 /** O papel `principal` também serve em slot `composto`. */

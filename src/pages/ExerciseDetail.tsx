@@ -3,7 +3,8 @@ import { useParams } from 'react-router'
 import { ExerciseGif } from '../components/ExerciseMedia'
 import { Chip, Screen } from '../components/ui'
 import { displayName } from '../data/catalog'
-import { CURATED_BY_ID, MUSCLE_GROUP_PT } from '../data/curated'
+import { MUSCLE_GROUP_PT } from '../data/curated'
+import { curatedInfo } from '../data/lpo'
 import { bodyPartPt, equipmentPt, musclePt } from '../data/i18n'
 import type { StoredLang } from '../data/types'
 import { useExercise } from '../lib/useCatalog'
@@ -17,9 +18,9 @@ export default function ExerciseDetail() {
 
   if (ex === undefined) return <Screen title="Exercício" back>Carregando…</Screen>
 
-  const curated = CURATED_BY_ID.get(ex.id)
+  const curated = curatedInfo(ex.id)
   const secondary = [...new Set([ex.muscleGroup, ...ex.secondary])].filter((m) => m !== ex.target)
-  const steps = ex.steps[lang]
+  const steps = ex.stepsPt?.length ? ex.stepsPt : ex.steps[lang]
 
   return (
     <Screen title={displayName(ex)} back>
@@ -55,7 +56,7 @@ export default function ExerciseDetail() {
       <section className="mt-6">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold">Passo a passo</h3>
-          <div className="flex rounded-lg border border-line p-0.5 text-xs">
+          <div className={`flex rounded-lg border border-line p-0.5 text-xs ${ex.stepsPt?.length ? 'hidden' : ''}`}>
             {(['es', 'en'] as const).map((l) => (
               <button
                 key={l}
@@ -67,7 +68,8 @@ export default function ExerciseDetail() {
             ))}
           </div>
         </div>
-        <p className="mt-1 text-xs text-muted">O dataset ainda não tem instruções em português.</p>
+        {!ex.stepsPt?.length && <p className="mt-1 text-xs text-muted">O dataset ainda não tem instruções em português.</p>}
+        {ex.source === 'custom' && !steps.length && <p className="mt-1 text-xs text-muted">Exercício próprio, sem passo a passo.</p>}
         <ol className="mt-3 space-y-2">
           {steps.map((s, i) => (
             <li key={i} className="flex gap-3 text-sm leading-relaxed">

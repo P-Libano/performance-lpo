@@ -25,7 +25,7 @@ function haystack(e: Exercise) {
 export function filterCatalog(list: Exercise[], f: CatalogFilter): Exercise[] {
   const terms = normalize(f.query).split(/\s+/).filter(Boolean)
   const out = list.filter((e) => {
-    if (f.onlyCurated && !CURATED_BY_ID.has(e.id)) return false
+    if (f.onlyCurated && !CURATED_BY_ID.has(e.id) && e.source !== 'custom') return false
     if (f.bodyPart && e.bodyPart !== f.bodyPart) return false
     if (f.equipment && e.equipment !== f.equipment) return false
     if (terms.length) {

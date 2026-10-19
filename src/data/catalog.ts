@@ -1,5 +1,6 @@
 import { META, db } from '../db'
 import { CURATED_BY_ID } from './curated'
+import { LPO_EXERCISES } from './lpo'
 import type { Exercise, RawExercise } from './types'
 
 export const DATASET_CDN = 'https://cdn.jsdelivr.net/gh/hasaneyldrm/exercises-dataset@main'
@@ -48,10 +49,16 @@ async function download(): Promise<Exercise[]> {
   return raw.map(slimExercise)
 }
 
+/** Exercícios próprios do app sempre presentes (os criados pelo usuário/importação ficam na tabela). */
+const ensureCustom = () => db.exercises.bulkPut([...LPO_EXERCISES])
+
 async function store(list: Exercise[]) {
   await db.transaction('rw', db.exercises, db.meta, async () => {
+    // a atualização do dataset não pode levar junto os exercícios criados no app
+    const custom = await db.exercises.filter((e) => e.source === 'custom').toArray()
     await db.exercises.clear()
-    await db.exercises.bulkPut(list)
+    await db.exercises.bulkPut([...list, ...custom])
+    await ensureCustom()
     const meta: CatalogMeta = { format: CATALOG_FORMAT, fetchedAt: Date.now(), count: list.length }
     await db.meta.put({ key: CATALOG_META_KEY, value: meta })
   })
@@ -65,6 +72,7 @@ export async function ensureCatalog(): Promise<{ count: number; source: 'local' 
   const meta = (await db.meta.get(CATALOG_META_KEY))?.value as CatalogMeta | undefined
   const usable = meta && meta.format === CATALOG_FORMAT && meta.count > 0
   if (usable) {
+    await ensureCustom()
     if (Date.now() - meta.fetchedAt > REFRESH_AFTER_MS && navigator.onLine) {
       download().then(store).catch(() => {})
     }

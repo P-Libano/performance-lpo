@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { MEDIA_ATTRIBUTION, mediaUrl } from '../data/catalog'
+import type { LpoAnimation as LpoId } from '../data/lpo'
 import type { Exercise } from '../data/types'
+import { LpoAnimation } from './LpoAnimation'
 
 /** Miniatura (jpg) para listas. */
 export function ExerciseThumb({ exercise, size = 56 }: { exercise: Exercise; size?: number }) {
   const [failed, setFailed] = useState(false)
-  if (failed) {
+  if (exercise.animation) {
+    return <LpoAnimation id={exercise.animation as LpoId} still className="shrink-0 rounded-lg" style={{ width: size, height: size }} />
+  }
+  if (failed || !exercise.image) {
     // CDN pode recusar (limite de taxa) ou estar offline sem cache
     return (
       <div
@@ -37,6 +42,23 @@ export function ExerciseThumb({ exercise, size = 56 }: { exercise: Exercise; siz
 /** GIF de execução com a atribuição exigida pela licença da mídia (Gym visual). */
 export function ExerciseGif({ exercise, className = '' }: { exercise: Exercise; className?: string }) {
   const [failed, setFailed] = useState(false)
+  if (exercise.animation) {
+    return (
+      <figure className={className}>
+        <LpoAnimation id={exercise.animation as LpoId} className="aspect-square w-full max-w-[360px] rounded-xl" />
+        <figcaption className="mt-1 text-[10px] text-muted">Animação ilustrativa do Progressa</figcaption>
+      </figure>
+    )
+  }
+  if (!exercise.gif) {
+    return (
+      <figure className={className}>
+        <div className="grid aspect-square w-full place-items-center rounded-xl bg-surface-2 px-3 text-center text-sm text-muted">
+          Exercício próprio, sem GIF
+        </div>
+      </figure>
+    )
+  }
   return (
     <figure className={className}>
       {failed ? (

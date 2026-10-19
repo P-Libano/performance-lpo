@@ -70,6 +70,7 @@ export type MovementPattern =
   | 'abdominal'
   | 'encolhimento'
   | 'punho'
+  | 'olimpico'
   | 'condicionamento'
 
 export interface CuratedExercise {
@@ -208,6 +209,7 @@ const ROWS: Row[] = [
   ['0117', 'Levantamento terra sumô', 'posteriores', 'terra', C],
   ['0044', 'Good morning com barra', 'posteriores', 'terra', C],
   ['1757', 'Terra unilateral com halter', 'posteriores', 'terra', C],
+  ['0116', 'Stiff com barra', 'posteriores', 'terra', C],
   ['0586', 'Mesa flexora', 'posteriores', 'flexora', I],
   ['0599', 'Cadeira flexora', 'posteriores', 'flexora', I],
   ['3193', 'Glute-ham raise (flexão nórdica)', 'posteriores', 'flexora', I],

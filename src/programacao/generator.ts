@@ -71,7 +71,8 @@ interface Picker {
 }
 
 function makePicker(profile: UserProfile, equipmentOf: EquipmentLookup): Picker {
-  const pool = META.filter((m) => isAvailable(profile, m.id, equipmentOf(m.id)))
+  // LPO só entra por template (exige técnica e acompanhamento); o gerador por objetivo não escolhe
+  const pool = META.filter((m) => m.pattern !== 'olimpico' && isAvailable(profile, m.id, equipmentOf(m.id)))
   const beginner = profile.level === 'iniciante'
   const preferLoaded = profile.equipment !== 'peso_corporal'
   const weekUsed = new Set<string>()

@@ -3,7 +3,8 @@ import { Link } from 'react-router'
 import { ExerciseThumb } from '../components/ExerciseMedia'
 import { Chip, Icon, Screen } from '../components/ui'
 import { displayName } from '../data/catalog'
-import { CURATED_BY_ID, MUSCLE_GROUP_PT } from '../data/curated'
+import { MUSCLE_GROUP_PT } from '../data/curated'
+import { curatedInfo } from '../data/lpo'
 import { BODY_PART_PT, equipmentPt, musclePt } from '../data/i18n'
 import { EMPTY_FILTER, filterCatalog, type CatalogFilter } from '../data/search'
 import { BODY_PARTS } from '../data/types'
@@ -12,7 +13,7 @@ import { useExercises } from '../lib/useCatalog'
 const PAGE = 40
 
 const groupOf = (id: string) => {
-  const c = CURATED_BY_ID.get(id)
+  const c = curatedInfo(id)
   return c && MUSCLE_GROUP_PT[c.group]
 }
 

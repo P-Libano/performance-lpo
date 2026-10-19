@@ -57,4 +57,10 @@ export interface Exercise {
   gif: string // caminho relativo no repo
   steps: Record<StoredLang, string[]>
   attribution: string
+  /** 'custom' = criado no app (LPO e exercícios importados que não casaram com o dataset); sobrevive à atualização do catálogo. */
+  source?: 'custom'
+  /** Passo a passo em pt-BR (só exercícios próprios). */
+  stepsPt?: string[]
+  /** Animação própria (vetorial) no lugar do GIF do dataset. */
+  animation?: string
 }
