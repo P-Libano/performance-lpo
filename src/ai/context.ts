@@ -1,6 +1,7 @@
 import { CURATED, MUSCLE_GROUP_PT, type CuratedExercise } from '../data/curated'
 import { EQUIPMENT_PT } from '../data/i18n'
 import { EQUIPMENT_ACCESS_PT, GOAL_PT, LEVEL_PT, SPLIT_PT, hasPullupBar, isAvailable, type Profile } from '../domain/profile'
+import { isLow, readinessText } from '../domain/readiness'
 import type { Session } from '../domain/session'
 import { progressionText } from '../programacao/explain'
 import { effectiveProfile, resolveRole } from '../programacao/generator'
@@ -96,6 +97,7 @@ ${lines.join('\n')}`
 export const REVIEW_SYSTEM = `Você é um treinador de musculação revisando as duas últimas semanas de treino de um aluno de um app brasileiro.
 O app já aplica a progressão automática do objetivo (descrita no pedido) e semanas de deload planejadas.
 Seu papel é olhar o conjunto: estagnação, regressão, RPE alto demais, volume desequilibrado, exercícios pulados, carga alta ou baixa demais para a faixa.
+Quando houver check-in de prontidão (sono, energia, fadiga de 1 a 5), considere-o: queda de desempenho em dias de prontidão baixa não é estagnação; prontidão baixa repetida pede menos volume ou um deload, não carga maior.
 Responda em português do Brasil.
 - "summary": no máximo 3 frases, direto ao ponto.
 - "adjustments": de 0 a 8 itens, só onde há algo a mudar ou destacar; use os ids exatos da rotina.
@@ -132,6 +134,8 @@ export function reviewPrompt(
     const date = new Date(s.startedAt).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })
     return [
       `${date} — ${s.dayName} (semana ${s.weekIndex}, ${s.weekKind})`,
+      ...(s.readiness ? [`  Prontidão: ${readinessText(s.readiness)}${isLow(s.readiness) ? ' — baixa, o app reduziu a carga sugerida em 5%' : ''}`] : []),
+      ...(s.notes?.trim() ? [`  Observações do aluno: ${s.notes.trim().slice(0, 300)}`] : []),
       ...s.exercises
         .filter((e) => e.role !== 'condicionamento')
         .map((e) => {

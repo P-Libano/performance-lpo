@@ -2,7 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
 import { activeDurationSec, buildSession, type Session, type SetLog } from '../domain/session'
 import type { TimerState } from '../domain/timer'
-import type { Program } from '../programacao/types'
+import { applyReadiness } from '../domain/readiness'
+import type { Program, Readiness } from '../programacao/types'
 
 export async function getActiveSession(): Promise<Session | undefined> {
   return db.sessions.where('status').equals('active').first()
@@ -85,7 +86,15 @@ export const setRest = (id: number, t: TimerState) =>
     if (t.total !== undefined) s.restTotal = t.total
   })
 
-export const finishSession = (id: number, now = Date.now()) =>
+/** Check-in de prontidão: grava e ajusta a carga sugerida (−5% com prontidão baixa). */
+export const setReadiness = (id: number, r: Readiness) => mutate(id, (s) => void applyReadiness(s, r))
+
+export const setSessionNotes = (id: number, notes: string) =>
+  mutate(id, (s) => {
+    s.notes = notes.slice(0, 2000)
+  })
+
+export const finishSession =(id: number, now = Date.now()) =>
   mutate(id, (s) => {
     s.status = 'done'
     s.finishedAt = now

@@ -122,6 +122,7 @@ const sessionSchema = z.object({
         reps: range.optional(),
         failStreak: z.number().int(),
         reason: z.string(),
+        beforeReadiness: num.optional(),
       }),
       previous: resultSchema.optional(),
       recent: z.array(resultSchema).optional(),

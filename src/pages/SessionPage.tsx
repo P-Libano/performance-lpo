@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { ReadinessCard } from '../components/ReadinessCard'
 import { RestTimer, TimerPresets } from '../components/RestTimer'
 import { startTimer, type TimerState } from '../domain/timer'
 import { SessionExerciseCard } from '../components/SessionExerciseCard'
@@ -16,6 +17,7 @@ import {
   discardSession,
   finishSession,
   removeLastSet,
+  setReadiness,
   setRest,
   setWeightFrom,
   toggleSetDone,
@@ -157,6 +159,7 @@ export default function SessionPage() {
           <Icon name="timer" className="size-4" /> Descanso
         </button>
       </div>
+      <ReadinessCard value={session.readiness} onChange={(r) => setReadiness(id, r)} />
       {showPresets && (
         <TimerPresets
           className="mb-3"

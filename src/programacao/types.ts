@@ -384,6 +384,8 @@ export interface SuggestionV2 {
   reps?: Range
   failStreak: number
   reason: string
+  /** Carga sugerida antes do ajuste por prontidão baixa (o ajuste é reversível). */
+  beforeReadiness?: number
 }
 
 /** Contrato de cada estratégia de progressão (uma implementação por ProgressionRule). */
