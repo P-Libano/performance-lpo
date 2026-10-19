@@ -1,4 +1,6 @@
 import { MUSCLE_GROUPS } from '../data/curated'
+import { LPO_BY_ID } from '../data/lpo'
+import type { Exercise } from '../data/types'
 import { META, db } from '../db'
 import type { EquipmentLookup } from '../programacao/generator'
 import { migrateRoutine, migrateSession, type RoutineV1, type SessionV1 } from '../programacao/migrate'
@@ -144,6 +146,22 @@ export const backupSchema = z.object({
   activeProgramId: z.number().int().nullable(),
   programs: z.array(programSchema),
   sessions: z.array(sessionSchema),
+  // opcionais (porte do Chorão): backups antigos não têm
+  cycles: z
+    .array(
+      z.object({
+        id: z.number().int(),
+        programId: z.number().int(),
+        cycle: z.number().int().min(1),
+        closedAt: num,
+        weeks: z.array(num),
+        total: num,
+        exercises: z.array(z.object({ dayKey: z.string(), exerciseId: z.string(), kg: z.array(num.nullable()) })),
+      }),
+    )
+    .optional(),
+  // exercícios criados no app (importação do Chorão); os LPO fixos o app recria sozinho
+  customExercises: z.array(z.looseObject({ id: z.string(), name: z.string(), source: z.literal('custom') })).optional(),
 })
 
 // ── formato 1 (só para importar backups antigos) ──
@@ -202,11 +220,13 @@ const backupSchemaV1 = z.object({
 export type Backup = BackupV2
 
 export async function exportData(now = new Date()): Promise<Backup> {
-  const [profile, active, programs, sessions] = await Promise.all([
+  const [profile, active, programs, sessions, cycles, custom] = await Promise.all([
     db.meta.get(META.profile),
     db.meta.get(META.activeProgram),
     db.programs.toArray(),
     db.sessions.toArray(),
+    db.cycles.toArray(),
+    db.exercises.filter((e) => e.source === 'custom' && !LPO_BY_ID.has(e.id)).toArray(),
   ])
   return {
     app: 'progressa',
@@ -216,7 +236,23 @@ export async function exportData(now = new Date()): Promise<Backup> {
     activeProgramId: (active?.value as number | undefined) ?? null,
     programs,
     sessions,
+    cycles,
+    customExercises: custom,
   }
+}
+
+/** Exporta, baixa o arquivo e registra a data (aviso de backup com mais de 7 dias). */
+export async function exportBackupFile(now = new Date()): Promise<Backup> {
+  const data = await exportData(now)
+  downloadJson(data, `progressa-backup-${data.exportedAt.slice(0, 10)}.json`)
+  await db.meta.put({ key: META.lastBackupAt, value: now.getTime() })
+  return data
+}
+
+/** Dias desde o último backup (null = nunca). */
+export async function daysSinceBackup(now = Date.now()): Promise<number | null> {
+  const last = (await db.meta.get(META.lastBackupAt))?.value as number | undefined
+  return last ? Math.floor((now - last) / 864e5) : null
 }
 
 export class BackupError extends Error {}
@@ -263,12 +299,15 @@ export function parseBackup(text: string, equipmentOf: EquipmentLookup = () => u
 
 /** Substitui perfil, programas e sessões pelos do backup (o catálogo e a chave da API ficam). */
 export async function importData(b: Backup): Promise<{ programs: number; sessions: number }> {
-  await db.transaction('rw', db.meta, db.programs, db.sessions, async () => {
+  await db.transaction('rw', [db.meta, db.programs, db.sessions, db.cycles, db.exercises], async () => {
     await db.programs.clear()
     await db.sessions.clear()
+    await db.cycles.clear()
     await db.meta.bulkDelete([META.profile, META.activeProgram])
     await db.programs.bulkPut(b.programs as Program[])
     await db.sessions.bulkPut(b.sessions as SessionV2[])
+    if (b.cycles) await db.cycles.bulkPut(b.cycles)
+    if (b.customExercises) await db.exercises.bulkPut(b.customExercises as unknown as Exercise[])
     if (b.profile) await db.meta.put({ key: META.profile, value: b.profile })
     if (b.activeProgramId !== null) await db.meta.put({ key: META.activeProgram, value: b.activeProgramId })
   })
@@ -277,9 +316,10 @@ export async function importData(b: Backup): Promise<{ programs: number; session
 
 /** Apaga dados do usuário (mantém o catálogo baixado e a chave da API). */
 export async function wipeUserData() {
-  await db.transaction('rw', db.meta, db.programs, db.sessions, async () => {
+  await db.transaction('rw', db.meta, db.programs, db.sessions, db.cycles, async () => {
     await db.programs.clear()
     await db.sessions.clear()
+    await db.cycles.clear()
     await db.meta.bulkDelete([META.profile, META.activeProgram])
   })
 }

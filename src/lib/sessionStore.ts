@@ -100,5 +100,8 @@ export async function lastDoneSession(programId: number): Promise<Session | unde
 export const useActiveSession = () => useLiveQuery(async () => (await getActiveSession()) ?? null, [])
 export const useSession = (id: number | undefined) =>
   useLiveQuery(async () => (id === undefined ? null : ((await db.sessions.get(id)) ?? null)), [id])
-export const useLastDoneSession = (programId: number | undefined) =>
+/** Todas as sessões do programa (grade, próximo treino do ciclo). */
+export const useProgramSessions = (programId: number | undefined) =>
+  useLiveQuery(async () => (programId === undefined ? [] : db.sessions.where('programId').equals(programId).toArray()), [programId])
+export const useLastDoneSession =(programId: number | undefined) =>
   useLiveQuery(async () => (programId === undefined ? null : ((await lastDoneSession(programId)) ?? null)), [programId])

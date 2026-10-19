@@ -5,7 +5,7 @@ import { ApiKeyCard } from '../components/ApiKeyCard'
 import { Button, Screen } from '../components/ui'
 import { MEDIA_ATTRIBUTION } from '../data/catalog'
 import { db } from '../db'
-import { BackupError, downloadJson, exportData, importData, parseBackup, wipeUserData } from '../lib/backup'
+import { BackupError, exportBackupFile, importData, parseBackup, wipeUserData } from '../lib/backup'
 import { getTheme, setTheme, type ThemeChoice } from '../lib/theme'
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
@@ -30,8 +30,7 @@ export default function SettingsPage() {
   const [theme, setThemeState] = useState<ThemeChoice>(getTheme)
 
   const onExport = async () => {
-    const data = await exportData()
-    downloadJson(data, `progressa-backup-${data.exportedAt.slice(0, 10)}.json`)
+    const data = await exportBackupFile()
     setMsg({ tone: 'ok', text: `Backup gerado: ${data.sessions.length} sessões, ${data.programs.length} programas.` })
   }
 

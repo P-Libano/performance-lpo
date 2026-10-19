@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db'
-import { buildGrid, currentCycle, logFromCell, sessionCycle, sessionIndexOf, type Cell } from '../domain/ciclo'
+import { buildGrid, closeCycle, currentCycle, logFromCell, sessionCycle, sessionIndexOf, snapshotsToPrune, type Cell } from '../domain/ciclo'
 import { buildSession } from '../domain/session'
 import type { CycleSnapshot, Program, SessionV2 } from '../programacao/types'
 
@@ -23,7 +23,23 @@ export function useCycleGrid(program: Program | null | undefined) {
   }, [program])
 }
 
-const emptyCell = (c: Pick<Cell, 'sets' | 'reps' | 'kg' | 'rpe' | 'variant'>) => !c.sets && !c.reps && !c.kg && !c.rpe && !c.variant
+/**
+ * Novo ciclo (o backup é responsabilidade de quem chama, antes): guarda o resumo do ciclo atual
+ * (últimos 24) e avança o programa. As cargas viram o "Ant."; as sessões antigas ficam no histórico.
+ */
+export async function startNewCycle(program: Program, now = Date.now()): Promise<CycleSnapshot> {
+  return db.transaction('rw', db.programs, db.sessions, db.cycles, async () => {
+    const fresh = (await db.programs.get(program.id!))!
+    const sessions = await db.sessions.where('programId').equals(fresh.id!).toArray()
+    const snap = closeCycle(fresh, buildGrid(fresh, sessions, await previousSnapshot(fresh)), now)
+    snap.id = (await db.cycles.add(snap)) as number
+    await db.cycles.bulkDelete(snapshotsToPrune(await db.cycles.where('programId').equals(fresh.id!).toArray()))
+    await db.programs.put({ ...fresh, currentCycle: currentCycle(fresh) + 1 })
+    return snap
+  })
+}
+
+const emptyCell =(c: Pick<Cell, 'sets' | 'reps' | 'kg' | 'rpe' | 'variant'>) => !c.sets && !c.reps && !c.kg && !c.rpe && !c.variant
 
 /**
  * Grava uma célula da grade: reescreve as séries do exercício na sessão daquele dia/semana do ciclo

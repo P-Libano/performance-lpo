@@ -16,7 +16,8 @@ import {
   type Grid,
   type GridRow,
 } from '../domain/ciclo'
-import { setCell, useCycleGrid } from '../lib/cicloStore'
+import { exportBackupFile } from '../lib/backup'
+import { setCell, startNewCycle, useCycleGrid } from '../lib/cicloStore'
 import { useActiveProgram } from '../lib/programStore'
 import { useExerciseMap } from '../lib/useCatalog'
 import type { Program } from '../programacao/types'
@@ -196,6 +197,7 @@ export default function CicloPage() {
   const byId = useExerciseMap()
   const [daySel, setDaySel] = useState<string | undefined>()
   const [editing, setEditing] = useState<Editing | null>(null)
+  const [confirmCycle, setConfirmCycle] = useState(false)
 
   if (program === null) return <Navigate to="/onboarding" replace />
   if (!program || !data || !byId) return <Screen title="Grade do ciclo">Carregando…</Screen>
@@ -209,7 +211,14 @@ export default function CicloPage() {
   const cols = { gridTemplateColumns: `repeat(${grid.weekIndices.length}, minmax(0, 1fr))` }
 
   return (
-    <Screen title="Grade do ciclo">
+    <Screen
+      title="Grade do ciclo"
+      action={
+        <button onClick={() => setConfirmCycle(true)} className="rounded-lg px-2 py-1 text-sm text-accent hover:bg-surface-2 print:hidden">
+          Novo ciclo
+        </button>
+      }
+    >
       <TreinoTabs />
       <TonnageBanner grid={grid} previous={previous} />
 
@@ -278,6 +287,31 @@ export default function CicloPage() {
       </p>
 
       {editing && <CellEditor program={program} editing={editing} name={name(editing.row.exerciseId)} onClose={() => setEditing(null)} />}
+      {confirmCycle && (
+        <Sheet title={`Fechar o ciclo ${grid.cycle} e começar o ${grid.cycle + 1}?`} onClose={() => setConfirmCycle(false)}>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-ink/85">
+            <li>Primeiro baixa o backup (arquivo JSON) com tudo o que está registrado.</li>
+            <li>Guarda o resumo do ciclo: tonelagem S1–S{grid.weekIndices.length} ({fmtTonKg(grid.total)}) e as cargas de cada exercício.</li>
+            <li>A grade recomeça vazia na S1. As cargas de agora aparecem como “Ant.” em cada semana, com a variação %.</li>
+            <li>Os treinos feitos continuam no histórico e na progressão.</li>
+          </ul>
+          <div className="mt-4 flex gap-2">
+            <Button variant="ghost" className="flex-1" onClick={() => setConfirmCycle(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={async () => {
+                await exportBackupFile()
+                await startNewCycle(program)
+                setConfirmCycle(false)
+              }}
+            >
+              Baixar backup e iniciar
+            </Button>
+          </div>
+        </Sheet>
+      )}
     </Screen>
   )
 }

@@ -229,6 +229,34 @@ export function closeCycle(program: Program, grid: Grid, now = Date.now()): Cycl
   }
 }
 
+/**
+ * Próximo treino dentro do ciclo atual: depois da sessão concluída mais adiantada (semana, dia) —
+ * não da mais recente, para que preencher uma semana antiga na grade não volte o ponteiro.
+ * `cycleDone` = todas as semanas do ciclo já têm o último dia feito (hora do "Novo ciclo").
+ */
+export function nextInCycle(program: Program, sessions: SessionV2[]): { weekIndex: number; dayIndex: number; cycleDone: boolean } {
+  const weeks = allWeeks(program)
+  let best: { wi: number; di: number } | null = null
+  for (const s of sessions) {
+    if (s.programId !== program.id || s.status !== 'done' || sessionCycle(s) !== currentCycle(program)) continue
+    const wi = weeks.findIndex((w) => w.index === s.weekIndex)
+    const di = wi >= 0 ? weeks[wi].days.findIndex((d) => d.key === s.dayKey) : -1
+    if (di < 0) continue
+    if (!best || wi > best.wi || (wi === best.wi && di > best.di)) best = { wi, di }
+  }
+  if (!best) return { weekIndex: weeks[0].index, dayIndex: 0, cycleDone: false }
+  if (best.di + 1 < weeks[best.wi].days.length) return { weekIndex: weeks[best.wi].index, dayIndex: best.di + 1, cycleDone: false }
+  if (best.wi + 1 < weeks.length) return { weekIndex: weeks[best.wi + 1].index, dayIndex: 0, cycleDone: false }
+  return { weekIndex: weeks[0].index, dayIndex: 0, cycleDone: true }
+}
+
+/** Mantém os `MAX_SNAPSHOTS` resumos mais recentes; devolve os ids a apagar. */
+export const snapshotsToPrune = (snaps: CycleSnapshot[]) =>
+  [...snaps]
+    .sort((a, b) => a.closedAt - b.closedAt)
+    .slice(0, Math.max(0, snaps.length - MAX_SNAPSHOTS))
+    .map((s) => s.id!)
+
 /** Resumo do ciclo: total do mês e variação contra o ciclo anterior. */
 export function cycleSummary(grid: Grid, previous?: CycleSnapshot) {
   return {

@@ -424,4 +424,8 @@ export interface BackupV2 {
   activeProgramId: number | null
   programs: Program[]
   sessions: SessionV2[]
+  /** Resumos de ciclos fechados (ausente em backups anteriores ao porte do Chorão). */
+  cycles?: CycleSnapshot[]
+  /** Exercícios criados no app (ex.: nomes do Chorão sem par no catálogo). */
+  customExercises?: unknown[]
 }

@@ -8,10 +8,11 @@ import { displayName } from '../data/catalog'
 import { MUSCLE_GROUP_PT, type MuscleGroup } from '../data/curated'
 import { EQUIPMENT_ACCESS_PT, GOAL_PT, LEVEL_PT, SPLIT_PT } from '../domain/profile'
 import { replaceExercise, useActiveProgram } from '../lib/programStore'
-import { startOrResume, useActiveSession, useLastDoneSession } from '../lib/sessionStore'
+import { startOrResume, useActiveSession, useProgramSessions } from '../lib/sessionStore'
+import { nextInCycle } from '../domain/ciclo'
 import { useExerciseMap, useExercises } from '../lib/useCatalog'
 import { fmtRest } from '../programacao/explain'
-import { allWeeks, nextPosition } from '../programacao/program'
+import { allWeeks } from '../programacao/program'
 import type { ExerciseGroup, ExercisePrescription, Range } from '../programacao/types'
 
 const ROLE_PT = { principal: 'Principal', composto: 'Composto', isolador: 'Isolador', condicionamento: 'Condicionamento' } as const
@@ -31,14 +32,14 @@ export default function RoutinePage() {
   const catalog = useExercises()
   const byId = useExerciseMap()
   const active = useActiveSession()
-  const last = useLastDoneSession(program?.id)
+  const sessions = useProgramSessions(program?.id)
   const navigate = useNavigate()
   const [weekSel, setWeekSel] = useState<number | undefined>()
   const [daySel, setDaySel] = useState<string | undefined>()
   const [swap, setSwap] = useState<{ day: string; gi: number; ii: number } | null>(null)
   const [why, setWhy] = useState(false)
 
-  const next = program && last !== undefined ? nextPosition(program, last ?? undefined) : undefined
+  const next = program && sessions ? nextInCycle(program, sessions) : undefined
   const weeks = program ? allWeeks(program) : []
   const weekIndex = weekSel ?? next?.weekIndex
   const week = weeks.find((w) => w.index === weekIndex)
@@ -231,6 +232,13 @@ export default function RoutinePage() {
       {day.notes && <p className="mt-1 text-sm text-muted">{day.notes}</p>}
 
       <div className="mt-2 space-y-2">{day.groups.map(groupBlock)}</div>
+
+      {next?.cycleDone && (
+        <Link to="/ciclo" className="mt-4 block rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm">
+          <span className="font-semibold text-accent">Ciclo {program.currentCycle ?? 1} completo.</span>{' '}
+          <span className="text-muted">Abra a grade e toque em “Novo ciclo” para guardar o resumo e recomeçar na semana 1 →</span>
+        </Link>
+      )}
 
       <button
         disabled={!!active}
