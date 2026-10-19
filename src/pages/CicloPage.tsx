@@ -19,9 +19,11 @@ import {
   tonnage,
   type Cell,
   type Grid,
+  type GridDay,
   type GridRow,
 } from '../domain/ciclo'
 import { isLow, readinessScore } from '../domain/readiness'
+import { copyText, gridDayText } from '../domain/resumo'
 import { exportBackupFile } from '../lib/backup'
 import { setCell, startNewCycle, useCycleGrid } from '../lib/cicloStore'
 import { useActiveProgram } from '../lib/programStore'
@@ -100,7 +102,7 @@ function CellButton({ row, wi, onOpen }: { row: GridRow; wi: number; onOpen: () 
           </span>
         </>
       ) : (
-        <span className="my-auto text-lg leading-none">+</span>
+        <span className="my-auto text-lg leading-none print:invisible">+</span>
       )}
       {filled && <span className="text-[10px] leading-tight text-muted tabular-nums">{c.tonnage ? fmtTonKg(c.tonnage) : 'ton —'}</span>}
       <Delta pct={deltaVsFirst(row, wi)} />
@@ -221,12 +223,16 @@ export default function CicloPage() {
   const [editing, setEditing] = useState<Editing | null>(null)
   const [confirmCycle, setConfirmCycle] = useState(false)
   const [charting, setCharting] = useState<GridRow | null>(null)
+  const [copied, setCopied] = useState<string | null>(null)
 
   if (program === null) return <Navigate to="/onboarding" replace />
   if (!program || !data || !byId) return <Screen title="Grade do ciclo">Carregando…</Screen>
 
   const { grid, previous } = data
-  const day = grid.days.find((d) => d.key === daySel) ?? grid.days[0]
+  // já carregados (dayBlock é declarada depois do return e não herda o estreitamento)
+  const exMap = byId
+  const allSessions = data.sessions
+  const day =grid.days.find((d) => d.key === daySel) ?? grid.days[0]
   const name = (id: string) => {
     const e = byId.get(id)
     return e ? displayName(e) : id
@@ -245,7 +251,7 @@ export default function CicloPage() {
       <TreinoTabs />
       <TonnageBanner grid={grid} previous={previous} />
 
-      <div className="mt-4 flex gap-2 overflow-x-auto pt-1.5 pr-1.5 pb-1" role="tablist" aria-label="Dias">
+      <div className="mt-4 flex gap-2 overflow-x-auto pt-1.5 pr-1.5 pb-1 print:hidden" role="tablist" aria-label="Dias">
         {grid.days.map((d) => (
           <button
             key={d.key}
@@ -261,14 +267,75 @@ export default function CicloPage() {
         ))}
       </div>
 
+      <div className="mt-2 flex gap-2 text-sm print:hidden">
+        <button
+          onClick={async () => setCopied((await copyText(gridDayText(grid, day, name, data.sessions))) ? day.key : 'erro')}
+          className="rounded-lg border border-line bg-surface px-3 py-1.5"
+        >
+          {copied === day.key ? 'Copiado ✓' : copied === 'erro' ? 'Não deu para copiar' : `Copiar ${day.key}`}
+        </button>
+        <button onClick={() => window.print()} className="rounded-lg border border-line bg-surface px-3 py-1.5">
+          Imprimir / PDF
+        </button>
+      </div>
+
+      {grid.days.map((d) => (
+        // na tela, só o dia escolhido; na impressão, todos
+        <div key={d.key} className={d.key === day.key ? 'print:break-before-auto' : 'hidden print:mt-6 print:block'}>
+          {dayBlock(d)}
+        </div>
+      ))}
+      <p className="mt-2 text-xs text-muted print:hidden">
+        Toque numa semana para registrar séries, reps, carga, RPE e a variação feita. A grade lê e grava as mesmas sessões do treino:
+        a progressão e o histórico usam tudo o que entrar aqui.
+      </p>
+
+      {editing && <CellEditor program={program} editing={editing} name={name(editing.row.exerciseId)} onClose={() => setEditing(null)} />}
+      {charting && (
+        <Suspense fallback={null}>
+          <CycleChartSheet row={charting} name={name(charting.exerciseId)} cycle={grid.cycle} history={data.history} onClose={() => setCharting(null)} />
+        </Suspense>
+      )}
+      {confirmCycle && (
+        <Sheet title={`Fechar o ciclo ${grid.cycle} e começar o ${grid.cycle + 1}?`} onClose={() => setConfirmCycle(false)}>
+          <ul className="list-disc space-y-1 pl-5 text-sm text-ink/85">
+            <li>Primeiro baixa o backup (arquivo JSON) com tudo o que está registrado.</li>
+            <li>Guarda o resumo do ciclo: tonelagem S1–S{grid.weekIndices.length} ({fmtTonKg(grid.total)}) e as cargas de cada exercício.</li>
+            <li>A grade recomeça vazia na S1. As cargas de agora aparecem como “Ant.” em cada semana, com a variação %.</li>
+            <li>Os treinos feitos continuam no histórico e na progressão.</li>
+          </ul>
+          <div className="mt-4 flex gap-2">
+            <Button variant="ghost" className="flex-1" onClick={() => setConfirmCycle(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={async () => {
+                await exportBackupFile()
+                await startNewCycle(program)
+                setConfirmCycle(false)
+              }}
+            >
+              Baixar backup e iniciar
+            </Button>
+          </div>
+        </Sheet>
+      )}
+    </Screen>
+  )
+
+  /** Um dia da grade (função, não componente: não remonta as células a cada render). */
+  function dayBlock(day: GridDay) {
+    return (
+      <>
       <h2 className="display mt-3 text-lg font-bold">{day.name}</h2>
       {day.notes && <p className="mt-0.5 text-sm text-muted">{day.notes}</p>}
 
       <div className="mt-3 space-y-3">
         {day.rows.map((row) => {
-          const ex = byId.get(row.exerciseId)
+          const ex = exMap.get(row.exerciseId)
           return (
-            <section key={`${row.groupIndex}-${row.itemIndex}`} className="rounded-2xl border border-line bg-surface p-2.5">
+            <section key={`${row.groupIndex}-${row.itemIndex}`} className="break-inside-avoid rounded-2xl border border-line bg-surface p-2.5">
               <div className="flex items-center gap-2.5">
                 {ex && (
                   <Link to={`/exercicio/${ex.id}`} aria-label={`Como fazer ${name(row.exerciseId)}`}>
@@ -312,7 +379,7 @@ export default function CicloPage() {
         ))}
       </div>
       {(() => {
-        const notes = data.sessions
+        const notes = allSessions
           .filter((s) => sessionCycle(s) === grid.cycle && s.dayKey === day.key && (s.notes?.trim() || s.readiness))
           .sort((a, b) => a.weekIndex - b.weekIndex)
         if (!notes.length) return null
@@ -335,42 +402,7 @@ export default function CicloPage() {
           </section>
         )
       })()}
-      <p className="mt-2 text-xs text-muted">
-        Toque numa semana para registrar séries, reps, carga, RPE e a variação feita. A grade lê e grava as mesmas sessões do treino:
-        a progressão e o histórico usam tudo o que entrar aqui.
-      </p>
-
-      {editing && <CellEditor program={program} editing={editing} name={name(editing.row.exerciseId)} onClose={() => setEditing(null)} />}
-      {charting && (
-        <Suspense fallback={null}>
-          <CycleChartSheet row={charting} name={name(charting.exerciseId)} cycle={grid.cycle} history={data.history} onClose={() => setCharting(null)} />
-        </Suspense>
-      )}
-      {confirmCycle && (
-        <Sheet title={`Fechar o ciclo ${grid.cycle} e começar o ${grid.cycle + 1}?`} onClose={() => setConfirmCycle(false)}>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-ink/85">
-            <li>Primeiro baixa o backup (arquivo JSON) com tudo o que está registrado.</li>
-            <li>Guarda o resumo do ciclo: tonelagem S1–S{grid.weekIndices.length} ({fmtTonKg(grid.total)}) e as cargas de cada exercício.</li>
-            <li>A grade recomeça vazia na S1. As cargas de agora aparecem como “Ant.” em cada semana, com a variação %.</li>
-            <li>Os treinos feitos continuam no histórico e na progressão.</li>
-          </ul>
-          <div className="mt-4 flex gap-2">
-            <Button variant="ghost" className="flex-1" onClick={() => setConfirmCycle(false)}>
-              Cancelar
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={async () => {
-                await exportBackupFile()
-                await startNewCycle(program)
-                setConfirmCycle(false)
-              }}
-            >
-              Baixar backup e iniciar
-            </Button>
-          </div>
-        </Sheet>
-      )}
-    </Screen>
-  )
+      </>
+    )
+  }
 }

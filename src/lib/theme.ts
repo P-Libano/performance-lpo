@@ -24,6 +24,31 @@ export function applyTheme(choice = getTheme()) {
   })
 }
 
+/** Modo Foco (Chorão): fonte 15% maior para ler de longe na academia. Fica neste aparelho. */
+const FOCUS_KEY = 'progressa-modo-foco'
+
+export function getFocusMode(): boolean {
+  try {
+    return localStorage.getItem(FOCUS_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function applyFocusMode(on = getFocusMode()) {
+  document.documentElement.classList.toggle('modo-foco', on)
+}
+
+export function setFocusMode(on: boolean) {
+  try {
+    if (on) localStorage.setItem(FOCUS_KEY, '1')
+    else localStorage.removeItem(FOCUS_KEY)
+  } catch {
+    // sem armazenamento: vale só nesta visita
+  }
+  applyFocusMode(on)
+}
+
 export function setTheme(choice: ThemeChoice) {
   try {
     if (choice === 'sistema') localStorage.removeItem(KEY)

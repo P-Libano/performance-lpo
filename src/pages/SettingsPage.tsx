@@ -7,7 +7,7 @@ import { MEDIA_ATTRIBUTION } from '../data/catalog'
 import { db } from '../db'
 import { BackupError, exportBackupFile, importData, parseBackup, wipeUserData } from '../lib/backup'
 import { ChoraoImportError, choraoInThisBrowser, importChorao } from '../lib/choraoStore'
-import { getTheme, setTheme, type ThemeChoice } from '../lib/theme'
+import { getFocusMode, getTheme, setFocusMode, setTheme, type ThemeChoice } from '../lib/theme'
 import { TEMPLATE_NAME } from '../programacao/chorao'
 import { isChoraoBackup } from '../programacao/choraoImport'
 
@@ -32,6 +32,7 @@ export default function SettingsPage() {
   const [confirmWipe, setConfirmWipe] = useState(false)
   const [theme, setThemeState] = useState<ThemeChoice>(getTheme)
   const [choraoLocal] = useState(choraoInThisBrowser)
+  const [focus, setFocus] = useState(getFocusMode)
 
   const onExport = async () => {
     const data = await exportBackupFile()
@@ -172,6 +173,21 @@ export default function SettingsPage() {
             </button>
           ))}
         </div>
+        <label className="mt-3 flex items-center justify-between gap-3">
+          <span>
+            <span className="block font-medium">Modo Foco</span>
+            <span className="text-xs text-muted">Letras e botões 15% maiores, para ler de longe na academia</span>
+          </span>
+          <input
+            type="checkbox"
+            checked={focus}
+            onChange={(e) => {
+              setFocusMode(e.target.checked)
+              setFocus(e.target.checked)
+            }}
+            className="size-5 accent-[var(--color-accent)]"
+          />
+        </label>
       </Card>
 
       <Card title="Guia">

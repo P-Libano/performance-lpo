@@ -140,3 +140,40 @@ body {
   image-rendering: auto;
   background: #fff;
 }
+
+/* Modo Foco (Chorão): tudo em rem, então a página inteira cresce 15%. */
+html.modo-foco {
+  font-size: 115%;
+}
+
+/* Impressão / PDF (grade do ciclo): papel branco com os tokens do tema claro, sem barras fixas. */
+@media print {
+  :root,
+  :root[data-theme] {
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-surface-2: #f1f3f5;
+    --color-line: #9aa1a9;
+    --color-ink: #000000;
+    --color-muted: #3d434a;
+    --color-accent: #6e4e10;
+    --color-accent-ink: #ffffff;
+    --color-warn: #1f4f87;
+    --color-danger: #a02a20;
+    color-scheme: light;
+  }
+  html,
+  body {
+    background: #fff;
+  }
+  html.modo-foco {
+    font-size: 100%;
+  }
+  header.sticky {
+    position: static;
+    backdrop-filter: none;
+  }
+  @page {
+    margin: 12mm;
+  }
+}

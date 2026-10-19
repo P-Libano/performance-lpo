@@ -4,9 +4,10 @@ import { HashRouter } from 'react-router'
 import App from './App'
 import { PwaUpdater } from './components/PwaUpdater'
 import './index.css'
-import { applyTheme } from './lib/theme'
+import { applyFocusMode, applyTheme } from './lib/theme'
 
 applyTheme()
+applyFocusMode()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -4,7 +4,9 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { ReadinessCard } from '../components/ReadinessCard'
 import { SessionNotes } from '../components/SessionNotes'
 import { RestTimer, TimerPresets } from '../components/RestTimer'
+import { copyText, sessionText } from '../domain/resumo'
 import { startTimer, type TimerState } from '../domain/timer'
+import { getFocusMode, setFocusMode } from '../lib/theme'
 import { SessionExerciseCard } from '../components/SessionExerciseCard'
 import { Button, Icon, Screen } from '../components/ui'
 import { displayName } from '../data/catalog'
@@ -50,6 +52,8 @@ export default function SessionPage() {
 
   const onRest = useCallback((t: TimerState) => setRest(id, t), [id])
   const [showPresets, setShowPresets] = useState(false)
+  const [focus, setFocus] = useState(getFocusMode)
+  const [copied, setCopied] = useState<'ok' | 'erro' | null>(null)
 
   // abre o primeiro exercício com série pendente
   useEffect(() => {
@@ -136,7 +140,17 @@ export default function SessionPage() {
           })}
         </ul>
         <SessionNotes value={session.notes} onSave={(v) => setSessionNotes(id, v)} />
-        <Button className="mt-5 w-full" onClick={() => navigate('/treino')}>
+        <Button
+          variant="ghost"
+          className="mt-4 w-full"
+          onClick={async () => {
+            const nameOf = (eid: string) => (byId.get(eid) ? displayName(byId.get(eid)!) : eid)
+            setCopied((await copyText(sessionText(session, nameOf))) ? 'ok' : 'erro')
+          }}
+        >
+          {copied === 'ok' ? 'Resumo copiado ✓' : copied === 'erro' ? 'Não deu para copiar' : 'Copiar resumo do treino'}
+        </Button>
+        <Button className="mt-2 w-full" onClick={() => navigate('/treino')}>
           Voltar para a rotina
         </Button>
       </Screen>
@@ -155,6 +169,17 @@ export default function SessionPage() {
       <div className="mb-3 flex items-center justify-between gap-2 text-sm">
         <Elapsed since={session.startedAt} />
         <span className="flex-1 text-muted">{pending} séries restantes</span>
+        <button
+          onClick={() => {
+            setFocusMode(!focus)
+            setFocus(!focus)
+          }}
+          aria-pressed={focus}
+          aria-label="Modo Foco (letras maiores)"
+          className={`rounded-lg border px-2.5 py-1.5 text-sm font-semibold ${focus ? 'border-accent bg-accent/10 text-accent' : 'border-line bg-surface'}`}
+        >
+          Aa
+        </button>
         <button
           onClick={() => setShowPresets((v) => !v)}
           aria-expanded={showPresets}
