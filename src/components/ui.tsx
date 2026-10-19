@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 
 export function Screen({
@@ -32,6 +32,45 @@ export function Screen({
         </div>
       </header>
       <div className="px-4 pt-4">{children}</div>
+    </div>
+  )
+}
+
+/** Painel que sobe da base da tela (fecha no fundo escuro ou com Esc). */
+export function Sheet({
+  title,
+  eyebrow,
+  onClose,
+  children,
+}: {
+  title: ReactNode
+  eyebrow?: string
+  onClose: () => void
+  children: ReactNode
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  return (
+    <div className="fixed inset-0 z-30 flex items-end bg-black/60 print:hidden" onClick={onClose} role="dialog" aria-modal>
+      <div
+        className="mx-auto max-h-[88dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl border-t border-line bg-surface pb-[calc(1rem+env(safe-area-inset-bottom))]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 flex items-start gap-2 border-b border-line bg-surface px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-line" />
+            {eyebrow && <p className="text-xs text-muted">{eyebrow}</p>}
+            <div className="font-semibold">{title}</div>
+          </div>
+          <button onClick={onClose} aria-label="Fechar" className="-mr-2 grid size-10 place-items-center rounded-full text-muted hover:bg-surface-2">
+            ✕
+          </button>
+        </div>
+        <div className="px-4 pt-3">{children}</div>
+      </div>
     </div>
   )
 }

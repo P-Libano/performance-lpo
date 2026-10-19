@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { ExerciseThumb } from '../components/ExerciseMedia'
 import { SwapSheet } from '../components/SwapSheet'
+import { TreinoTabs } from '../components/TreinoTabs'
 import { Chip, Icon, Screen } from '../components/ui'
 import { displayName } from '../data/catalog'
 import { MUSCLE_GROUP_PT, type MuscleGroup } from '../data/curated'
@@ -113,6 +114,7 @@ export default function RoutinePage() {
         </Link>
       }
     >
+      <TreinoTabs />
       <div className="flex flex-wrap gap-1.5">
         {program.source === 'template' ? (
           <>
