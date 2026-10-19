@@ -3,7 +3,7 @@ import { APP_NAME } from '../brand'
 import { MEDIA_ATTRIBUTION, mediaUrl } from '../data/catalog'
 import { LPO_BY_ID, type LpoAnimation as LpoId } from '../data/lpo'
 import type { Exercise } from '../data/types'
-import { GifSequence } from './GifSequence'
+import { GifPlayer } from './GifPlayer'
 import { LpoAnimation } from './LpoAnimation'
 
 /** Miniatura (jpg) para listas. */
@@ -46,11 +46,12 @@ export function ExerciseThumb({ exercise, size = 56 }: { exercise: Exercise; siz
 export function ExerciseGif({ exercise, className = '' }: { exercise: Exercise; className?: string }) {
   const [failed, setFailed] = useState(false)
   const alt = `Execução: ${exercise.namePt ?? exercise.name}`
-  // LPO: GIFs do dataset das partes do movimento, em sequência
-  if (exercise.parts?.length && !failed) {
+  // mesmo player para todos: GIF do dataset ou, nos LPO, os GIFs das partes do movimento em sequência
+  const parts = exercise.parts?.length ? exercise.parts : exercise.gif ? [{ gif: exercise.gif, label: '' }] : []
+  if (parts.length && !failed) {
     return (
       <figure className={className}>
-        <GifSequence parts={exercise.parts} alt={alt} onFail={() => setFailed(true)} />
+        <GifPlayer parts={parts} alt={alt} onFail={() => setFailed(true)} />
         <figcaption className="mt-1 space-y-0.5 text-[10px] leading-snug text-muted">
           {LPO_BY_ID.get(exercise.id)?.mediaNote && <span className="block">{LPO_BY_ID.get(exercise.id)!.mediaNote}</span>}
           <a href="https://gymvisual.com/" target="_blank" rel="noreferrer" className="block hover:underline">
@@ -80,20 +81,7 @@ export function ExerciseGif({ exercise, className = '' }: { exercise: Exercise; 
   }
   return (
     <figure className={className}>
-      {failed ? (
-        <div className="grid aspect-square w-full place-items-center rounded-xl bg-surface-2 text-sm text-muted">
-          GIF indisponível offline
-        </div>
-      ) : (
-        <img
-          src={mediaUrl(exercise.gif)}
-          alt={alt}
-          width={180}
-          height={180}
-          onError={() => setFailed(true)}
-          className="gif-frame aspect-square w-full max-w-[360px] rounded-xl object-contain"
-        />
-      )}
+      <div className="grid aspect-square w-full place-items-center rounded-xl bg-surface-2 text-sm text-muted">GIF indisponível offline</div>
       <figcaption className="mt-1 text-[10px] text-muted">
         <a href="https://gymvisual.com/" target="_blank" rel="noreferrer" className="hover:underline">
           {exercise.attribution || MEDIA_ATTRIBUTION}
