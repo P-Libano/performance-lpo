@@ -1,4 +1,8 @@
-# Progressa
+# Performance LPO
+
+> Fork do Progressa (branch `feat/chorao-fork`) com as funções do CHORÃO PERFORMANCE: levantamento olímpico,
+> grade do ciclo S1–S4, novo ciclo, prontidão e ferramentas de barra. Nome e marca em `src/brand.ts`; os
+> identificadores internos seguem "progressa", então os backups valem nos dois apps.
 
 App de treino de musculação (PWA) em português: monta o programa pelo seu objetivo, registra as séries e
 sugere a carga da próxima sessão. Roda no navegador, instala no Android e funciona offline. Sem backend:

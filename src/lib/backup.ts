@@ -268,7 +268,8 @@ export function parseBackup(text: string, equipmentOf: EquipmentLookup = () => u
     throw new BackupError('O arquivo não é um JSON válido.')
   }
   if (typeof raw !== 'object' || raw === null || (raw as { app?: unknown }).app !== 'progressa') {
-    throw new BackupError('Este arquivo não é um backup do Progressa.')
+    // `app: 'progressa'` vale para os dois apps (este fork lê e grava o mesmo formato)
+    throw new BackupError('Este arquivo não é um backup do Performance LPO (nem do Progressa).')
   }
   const format = (raw as { format?: unknown }).format
   if (format === 1) {

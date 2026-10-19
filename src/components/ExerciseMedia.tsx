@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { APP_NAME } from '../brand'
 import { MEDIA_ATTRIBUTION, mediaUrl } from '../data/catalog'
 import type { LpoAnimation as LpoId } from '../data/lpo'
 import type { Exercise } from '../data/types'
@@ -46,7 +47,7 @@ export function ExerciseGif({ exercise, className = '' }: { exercise: Exercise; 
     return (
       <figure className={className}>
         <LpoAnimation id={exercise.animation as LpoId} className="aspect-square w-full max-w-[360px] rounded-xl" />
-        <figcaption className="mt-1 text-[10px] text-muted">Animação ilustrativa do Progressa</figcaption>
+        <figcaption className="mt-1 text-[10px] text-muted">Animação ilustrativa do {APP_NAME}</figcaption>
       </figure>
     )
   }

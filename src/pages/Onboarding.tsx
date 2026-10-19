@@ -1,6 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
+import { APP_NAME, APP_TAGLINE } from '../brand'
 import { BrandLockup } from '../components/Brand'
+import { LpoAnimation } from '../components/LpoAnimation'
 import { Button, Screen } from '../components/ui'
 import {
   DEFAULT_PULLUP_BAR,
@@ -73,12 +75,110 @@ function Option({
   )
 }
 
+const FEATURES = [
+  'Grade do ciclo S1–S4 com tonelagem, 1RM e comparação com o ciclo anterior',
+  'Progressão automática da carga, ajustada pelo check-in de prontidão',
+  'Cronômetro, anilhas por lado, rampa de aquecimento e % do 1RM',
+]
+
+/** Primeira tela: o que o app faz e três caminhos (plano LPO, montar pelo objetivo, trazer dados). Sem conta: tudo fica no aparelho. */
+function Welcome({ onCustom }: { onCustom: () => void }) {
+  const navigate = useNavigate()
+  const file = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  const go = async (fn: () => Promise<unknown>) => {
+    setBusy(true)
+    setMsg(null)
+    try {
+      await fn()
+      navigate('/treino', { replace: true })
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Não foi possível abrir o arquivo.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /** Backup do Chorão (vira programa novo) ou deste app/Progressa (restaura tudo). Validação carregada só aqui. */
+  const restore = (f: File) =>
+    go(async () => {
+      const text = await f.text()
+      let raw: unknown = null
+      try {
+        raw = JSON.parse(text)
+      } catch {
+        throw new Error('O arquivo não é um JSON válido.')
+      }
+      const { isChoraoBackup } = await import('../programacao/choraoImport')
+      if (isChoraoBackup(raw)) return (await import('../lib/choraoStore')).importChorao(raw)
+      const { parseBackup, importData } = await import('../lib/backup')
+      return importData(parseBackup(text))
+    })
+
+  return (
+    <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-5 pt-[calc(env(safe-area-inset-top)+20px)] pb-28">
+      <BrandLockup className="h-9" />
+      <h1 className="display mt-5 text-2xl leading-tight font-bold">{APP_TAGLINE}</h1>
+
+      <div className="mt-4 overflow-hidden rounded-2xl border border-line">
+        <LpoAnimation id="snatch" className="aspect-[4/3] w-full" />
+      </div>
+
+      <ul className="mt-4 space-y-1.5 text-sm text-ink/85">
+        {FEATURES.map((f) => (
+          <li key={f} className="flex gap-2">
+            <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-accent" aria-hidden />
+            {f}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-6 space-y-2">
+        <Button className="w-full" disabled={busy} onClick={() => go(activateChoraoTemplate)}>
+          Começar com o plano {TEMPLATE_NAME}
+        </Button>
+        <p className="px-1 text-xs text-muted">
+          Snatch, clean e jerk no início do treino e musculação depois, 4 dias por semana, ciclos de 4 semanas. Cargas iniciais ajustáveis.
+        </p>
+        <Button variant="ghost" className="w-full" disabled={busy} onClick={onCustom}>
+          Montar pelo meu objetivo
+        </Button>
+        <button disabled={busy} onClick={() => file.current?.click()} className="w-full py-2 text-sm text-accent disabled:opacity-40">
+          Já tenho dados: importar backup (Chorão ou {APP_NAME})
+        </button>
+        <input
+          ref={file}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          aria-label="Arquivo de backup"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            e.target.value = ''
+            if (f) restore(f)
+          }}
+        />
+        {msg && (
+          <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+            {msg}
+          </p>
+        )}
+      </div>
+
+      <p className="mt-auto pt-6 text-center text-xs text-muted">Sem conta e sem login: seus dados ficam só neste aparelho. Faça backup em Ajustes.</p>
+    </div>
+  )
+}
+
 export default function Onboarding() {
   const saved = useProfile()
   const navigate = useNavigate()
   const [p, setP] = useState<Profile>(DEFAULT)
   const [splitTouched, setSplitTouched] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [mode, setMode] = useState<'inicio' | 'objetivo'>('inicio')
 
   useEffect(() => {
     if (saved) {
@@ -107,15 +207,23 @@ export default function Onboarding() {
     }
   }
 
+  if (!saved && mode === 'inicio') return <Welcome onCustom={() => setMode('objetivo')} />
+
   return (
     <Screen title={saved ? 'Refazer rotina' : 'Vamos montar seu treino'} back={!!saved}>
-      {!saved && <BrandLockup className="mb-4 h-8" />}
+      {!saved && (
+        <button onClick={() => setMode('inicio')} className="-mt-1 mb-3 text-sm text-muted">
+          ← Voltar ao início
+        </button>
+      )}
       {!saved && (
         <p className="mb-6 text-sm text-muted">
-          Cinco perguntas e o Progressa monta sua rotina. Dá para ajustar tudo depois.
+          Cinco perguntas e o {APP_NAME} monta sua rotina. Dá para ajustar tudo depois.
         </p>
       )}
 
+      {/* na primeira vez o plano pronto já está na tela de abertura; aqui só para quem refaz */}
+      {saved && (
       <section className="mb-7 rounded-2xl border border-accent/30 bg-accent/5 p-4">
         <p className="eyebrow text-accent">Plano pronto</p>
         <h2 className="display mt-1 font-semibold">{TEMPLATE_NAME}</h2>
@@ -140,7 +248,8 @@ export default function Onboarding() {
           Usar o plano {TEMPLATE_NAME}
         </Button>
       </section>
-      <p className="mb-4 text-sm font-medium text-muted">Ou monte pelo seu objetivo (AB, ABC e outras divisões):</p>
+      )}
+      {saved && <p className="mb-4 text-sm font-medium text-muted">Ou monte pelo seu objetivo (AB, ABC e outras divisões):</p>}
 
       <Section n={1} title="Objetivo">
         <div className="grid gap-2">

@@ -107,7 +107,7 @@ export default function SettingsPage() {
           onChange={(e) => e.target.files?.[0] && onImport(e.target.files[0])}
         />
         <p className="mt-2 text-xs text-muted">
-          Importar um backup do Progressa substitui o perfil, as rotinas e o histórico atuais. Um backup do CHORÃO PERFORMANCE (JSON exportado
+          Importar um backup deste app (ou do Progressa, que usa o mesmo formato) substitui o perfil, as rotinas e o histórico atuais. Um backup do CHORÃO PERFORMANCE (JSON exportado
           por ele) entra como programa novo, sem apagar nada.
         </p>
         {choraoLocal !== null && (

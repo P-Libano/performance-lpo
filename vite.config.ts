@@ -17,9 +17,12 @@ export default defineConfig(({ command, isPreview }) => ({
       registerType: 'prompt', // o app pergunta antes de trocar de versão (não interrompe um treino)
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Progressa — treino de musculação',
-        short_name: 'Progressa',
-        description: 'Treino de musculação com progressão automática, histórico e rotinas por objetivo.',
+        // fork do Progressa: id próprio para não ser tratado como o mesmo app instalado
+        id: 'performance-lpo',
+        name: 'Performance LPO — levantamento olímpico e musculação',
+        // o launcher do Android corta nomes longos (~12 caracteres)
+        short_name: 'Perf. LPO',
+        description: 'Levantamento olímpico e musculação, ciclo a ciclo: grade S1–S4, progressão automática, ferramentas de barra e histórico.',
         lang: 'pt-BR',
         dir: 'ltr',
         start_url: '.',

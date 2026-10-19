@@ -1,4 +1,4 @@
-import wordmark from '../assets/brand/wordmark.svg?raw'
+import { APP_NAME, APP_NAME_PARTS } from '../brand'
 
 /** Marca "Carga": barra, três anilhas crescendo e a trava. Cor = `currentColor` (use `text-accent`). */
 export function BrandMark({ className = 'size-6' }: { className?: string }) {
@@ -13,12 +13,45 @@ export function BrandMark({ className = 'size-6' }: { className?: string }) {
   )
 }
 
-/** Assinatura horizontal: marca em latão + "progressa" na cor do texto. Altura pelo `className` (ex.: h-7). */
+/**
+ * Assinatura horizontal: marca em latão + "Performance" na cor do texto + "LPO" em latão.
+ * Altura pelo `className` (ex.: h-7). O nome é texto num SVG (Archivo, a fonte de títulos do app),
+ * então escala junto com a marca; `textLength` fixa a largura mesmo antes de a fonte carregar.
+ */
 export function BrandLockup({ className = 'h-7' }: { className?: string }) {
+  const [name, tag] = APP_NAME_PARTS
   return (
-    <span className={`inline-flex items-center gap-[0.35em] ${className}`} role="img" aria-label="Progressa">
-      <BrandMark className="h-full w-auto text-accent" />
-      <span className="h-[52%] [&>svg]:h-full [&>svg]:w-auto" dangerouslySetInnerHTML={{ __html: wordmark }} />
+    <span className={`inline-flex items-center gap-[0.3em] ${className}`} role="img" aria-label={APP_NAME}>
+      <BrandMark className="h-full w-auto shrink-0 text-accent" />
+      <svg viewBox="0 0 212 30" className="h-[62%] w-auto overflow-visible" aria-hidden>
+        <text
+          x="0"
+          y="24"
+          fontFamily="var(--font-display)"
+          fontSize="29"
+          fontWeight="700"
+          letterSpacing="-0.4"
+          fill="var(--color-ink)"
+          style={{ fontStretch: '112.5%' }}
+          textLength="160"
+          lengthAdjust="spacingAndGlyphs"
+        >
+          {name}
+        </text>
+        <text
+          x="168"
+          y="24"
+          fontFamily="var(--font-display)"
+          fontSize="29"
+          fontWeight="900"
+          fill="var(--color-accent)"
+          style={{ fontStretch: '112.5%' }}
+          textLength="44"
+          lengthAdjust="spacingAndGlyphs"
+        >
+          {tag}
+        </text>
+      </svg>
     </span>
   )
 }
