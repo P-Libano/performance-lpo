@@ -42,7 +42,9 @@ const prescription = z.object({
 const programSchema = z.object({
   id: z.number().int(),
   createdAt: num,
-  source: z.enum(['local', 'ia']),
+  source: z.enum(['local', 'ia', 'template']),
+  templateName: z.string().optional(),
+  currentCycle: z.number().int().min(1).optional(),
   profile: profileSchema,
   // o snapshot do objetivo é conferido só no essencial; o resto vem do próprio app
   goal: z.looseObject({ id: z.enum(GOAL_IDS), nome: z.string() }),
@@ -58,6 +60,7 @@ const programSchema = z.object({
             z.object({
               key: z.string(),
               name: z.string(),
+              notes: z.string().optional(),
               groups: z.array(
                 z.object({
                   kind: z.enum(['simples', 'superset', 'circuito', 'finisher']),
@@ -120,10 +123,16 @@ const sessionSchema = z.object({
       previous: resultSchema.optional(),
       recent: z.array(resultSchema).optional(),
       log: z.array(z.object({ weight: num.nullable(), reps: num.nullable(), rpe: num.nullable(), done: z.boolean(), completedAt: num.optional() })),
+      variant: z.string().optional(),
     }),
   ),
   restUntil: num.optional(),
   restTotal: num.optional(),
+  restPausedLeft: num.optional(),
+  cycle: z.number().int().min(1).optional(),
+  origin: z.enum(['sessao', 'grade', 'chorao']).optional(),
+  readiness: z.object({ sleep: z.number().int().min(1).max(5), energy: z.number().int().min(1).max(5), soreness: z.number().int().min(1).max(5) }).optional(),
+  notes: z.string().optional(),
 })
 
 export const backupSchema = z.object({

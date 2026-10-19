@@ -262,6 +262,8 @@ export interface Day {
   key: string
   name: string
   groups: ExerciseGroup[]
+  /** Orientação fixa do dia (ex.: "Séries de LPO: 5 a 7"); templates. */
+  notes?: string
 }
 
 export interface Week {
@@ -281,7 +283,11 @@ export interface Block {
 export interface Program {
   id?: number
   createdAt: number
-  source: 'local' | 'ia'
+  source: 'local' | 'ia' | 'template'
+  /** Nome do template (ex.: "LPO + Musculação"), quando `source` = template. */
+  templateName?: string
+  /** Ciclo em andamento (1-based). "Novo ciclo" incrementa; as semanas voltam à 1. Ausente = 1. */
+  currentCycle?: number
   profile: UserProfile
   /** Snapshot do GoalProfile usado (programas antigos continuam coerentes se a config mudar). */
   goal: GoalProfile
@@ -319,6 +325,15 @@ export interface SessionExerciseV2 {
   previous?: ExerciseResultV2
   recent?: ExerciseResultV2[]
   log: SetLog[]
+  /** Variação executada nesta sessão (ex.: "Snatch bloco", "Búlgaro com halteres"). */
+  variant?: string
+}
+
+/** Check-in de prontidão (1–5). Sono e energia: 5 = melhor; fadiga: 5 = pior. */
+export interface Readiness {
+  sleep: number
+  energy: number
+  soreness: number
 }
 
 export interface SessionV2 {
@@ -337,6 +352,15 @@ export interface SessionV2 {
   exercises: SessionExerciseV2[]
   restUntil?: number
   restTotal?: number
+  /** Descanso pausado: segundos que faltavam ao pausar (com `restUntil` ausente). */
+  restPausedLeft?: number
+  /** Ciclo do programa em que a sessão foi feita (ausente = 1). */
+  cycle?: number
+  /** De onde veio o registro: treino ao vivo, grade do ciclo ou importação do Chorão. Ausente = sessão. */
+  origin?: 'sessao' | 'grade' | 'chorao'
+  readiness?: Readiness
+  /** Observações da sessão. */
+  notes?: string
 }
 
 /** Uma sessão passada do exercício, no formato que as estratégias recebem. */
@@ -371,6 +395,21 @@ export interface ProgressionContext {
   bodyweight: boolean
 }
 export type ProgressionStrategy = (ctx: ProgressionContext) => SuggestionV2
+
+// ───────────────────────── Ciclos ─────────────────────────
+
+/** Resumo de um ciclo fechado ("Novo ciclo"): referência "Ant." e comparação entre ciclos. */
+export interface CycleSnapshot {
+  id?: number
+  programId: number
+  cycle: number
+  closedAt: number
+  /** Tonelagem (séries × reps × kg) de cada semana, somando todos os dias. */
+  weeks: number[]
+  total: number
+  /** Carga de trabalho de cada exercício por semana. */
+  exercises: { dayKey: string; exerciseId: string; kg: (number | null)[] }[]
+}
 
 // ───────────────────────── Backup ─────────────────────────
 

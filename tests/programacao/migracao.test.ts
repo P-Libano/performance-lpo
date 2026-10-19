@@ -72,7 +72,9 @@ describe('migração v3 → v4 do IndexedDB', () => {
         ativo: active?.value,
       }),
     )
-    expect(db4.verno).toBe(4)
+    // passa pela v4 (esta migração) e chega à atual (v5: tabela de ciclos)
+    expect(db4.verno).toBe(5)
+    expect(await db4.cycles.count()).toBe(0)
     expect(p.id).toBe(7)
     expect(allWeeks(p)[0].days.map((d) => d.key)).toEqual(['A1', 'B1', 'A2', 'B2'])
     expect(p.explanation.length).toBeGreaterThan(50)

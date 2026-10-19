@@ -1,7 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { Exercise } from './data/types'
 import { migrateRoutine, migrateSession, type RoutineV1, type SessionV1 } from './programacao/migrate'
-import type { Program, SessionV2 } from './programacao/types'
+import type { CycleSnapshot, Program, SessionV2 } from './programacao/types'
 
 export interface MetaRow {
   key: string
@@ -13,6 +13,7 @@ export class ProgressaDB extends Dexie {
   meta!: EntityTable<MetaRow, 'key'>
   programs!: EntityTable<Program, 'id'>
   sessions!: EntityTable<SessionV2, 'id'>
+  cycles!: EntityTable<CycleSnapshot, 'id'>
 
   constructor(name = 'progressa') {
     super(name)
@@ -49,6 +50,10 @@ export class ProgressaDB extends Dexie {
           await tx.table('meta').delete(META_V1_ACTIVE_ROUTINE)
         }
       })
+    // v5 (porte do Chorão): resumos de ciclos fechados; sessões ganham ciclo/origem/prontidão (campos opcionais)
+    this.version(5).stores({
+      cycles: '++id, programId, closedAt',
+    })
   }
 }
 
@@ -60,6 +65,8 @@ export const META = {
   profile: 'profile',
   activeProgram: 'activeProgram',
   apiKey: 'anthropicApiKey',
+  /** Data (ms) do último backup exportado: aviso quando passar de 7 dias. */
+  lastBackupAt: 'lastBackupAt',
 } as const
 
 export const db = new ProgressaDB()
