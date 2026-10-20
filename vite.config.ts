@@ -65,6 +65,9 @@ export default defineConfig(({ command, isPreview }) => ({
     }),
   ],
   test: {
+    // sem cache de módulos em disco: com ele, o import.meta.glob de src/anim/exercises fica congelado e um
+    // exercício novo não é testado — "verde" sem testar (achado no piloto das animações)
+    fsModuleCache: false,
     environment: 'node',
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
   },

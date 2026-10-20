@@ -17,7 +17,7 @@ if (!which) {
 const outDir = join(root, 'docs', 'animacoes', 'folhas')
 
 // 1) HTML (renderização pelo próprio motor, via vitest, que entende TS/TSX)
-execFileSync(process.execPath, [join(root, 'node_modules', 'vitest', 'vitest.mjs'), 'run', 'tests/anim-sheet.gen.test.ts'], {
+execFileSync(process.execPath, [join(root, 'node_modules', 'vitest', 'vitest.mjs'), 'run', 'tests/anim-sheet.gen.test.ts', '--fsModuleCache=false'], {
   cwd: root,
   stdio: 'inherit',
   env: { ...process.env, ANIM_SHEET: which, ANIM_SHEET_DIR: outDir },
