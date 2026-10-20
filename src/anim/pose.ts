@@ -187,7 +187,10 @@ export function solve(p: PoseSpec): Skeleton {
     // ── perna
     const hip = add(pelvis, mul(left, k * SEG.hipHalf))
     const foot = p.feet[s]
-    const kneePole = p.kneePole?.[s] ?? add(front, mul(left, k * 0.25))
+    // padrão: o joelho dobra na direção da ponta do pé (um pouco para fora). NÃO usar a frente do tronco:
+    // com o tronco inclinado (terra, agachamento) ela aponta para baixo e o joelho abria para o lado.
+    const toeDir = unit(sub(foot.toe, foot.ankle))
+    const kneePole = p.kneePole?.[s] ?? add(toeDir, mul(v(-toeDir[2], 0, toeDir[0]), k * 0.1))
     const legIk = ik2(hip, foot.ankle, LEG.a, LEG.b, kneePole)
     const ankle = legIk.tip
     // calcanhar: atrás do tornozelo e do lado da sola. A direção da sola é perpendicular ao pé no plano

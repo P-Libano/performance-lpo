@@ -84,6 +84,24 @@ describe('motor: caminho das mãos', () => {
   })
 })
 
+describe('joelho', () => {
+  it('padrão: no terra (tronco inclinado) o joelho dobra para a ponta do pé, não para o lado', () => {
+    const s = solve(frame('Posição inicial'))
+    for (const k of ['L', 'R'] as const) {
+      const out = Math.abs(s.knee[k][2]) - Math.abs(s.ankle[k][2])
+      expect(out).toBeLessThan(8) // antes: ~20 cm para fora
+    }
+  })
+
+  it('joelho forçado para o lado com o pé no chão é acusado pela verificação geral', () => {
+    const bad: ExerciseSpec = {
+      ...terra,
+      frames: terra.frames.map((f) => ({ ...f, pose: { ...f.pose, kneePole: { L: v(0, 0, 1), R: v(0, 0, -1) } } })),
+    }
+    expect(runChecks(bad).some((f) => /joelho \([LR]\) dobra a/.test(f.message))).toBe(true)
+  })
+})
+
 describe('ficha: limites', () => {
   it('mais de 8 poses-chave é acusado', () => {
     const many = { ...terra, frames: [...terra.frames, ...terra.frames].slice(0, 9) }

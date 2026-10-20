@@ -17,8 +17,8 @@ const body = {
   pelvis: v(10, BODY_Y, 0),
   pitch: -90,
   head: 0,
+  // joelhos: padrão do motor (dobram na direção das pontas dos pés, que estão viradas para fora)
   feet: both(footFlat(50, 30, -20), mirrorFoot),
-  kneePole: both(v(0, 1, 0.5), mirrorZ),
 }
 // cotovelos para baixo (em direção ao chão), um pouco para os pés e para fora: ~45–75° do tronco
 const elbowPole = both(v(0.7, -1, 0.6), mirrorZ)

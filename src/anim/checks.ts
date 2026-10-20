@@ -3,7 +3,7 @@ import { MUSCLE_IDS } from './muscles'
 import { jointAngle } from './pose'
 import { DIM, insideSolid, midHands, solidsAt, type PropSpec } from './props'
 import { cycleMs, sampleAt, type Check, type ExerciseSpec } from './spec'
-import { angle, v, type V3 } from './vec'
+import { add, angle, dot, len, mul, sub, v, type V3 } from './vec'
 
 /**
  * Verificações das animações (docs/animacoes/PROCESSO.md, portão 2).
@@ -281,6 +281,21 @@ function generalFailures(s: Skeleton, props: PropSpec[], keyframe: boolean): str
     // quadril: ângulo tronco–coxa (180 = em pé); abaixo de ~25° o tronco "entra" na coxa
     const hipA = jointAngle(s.chest, s.hip[k], s.knee[k])
     if (hipA < 25) out.push(`quadril (${k}) fechado demais (${Math.round(hipA)}° entre tronco e coxa)`)
+    // pé plantado no chão e joelho dobrado: o joelho DOBRA para o lado da ponta do pé (nem para dentro nem
+    // aberto). Mede a direção da dobra (joelho em relação à reta quadril–tornozelo), vista de cima, e não a
+    // posição do joelho sobre o tornozelo, que depende da inclinação da canela.
+    const planted = s.heel[k][1] < 2 && s.toe[k][1] < 2
+    if (planted && kneeA < 165) {
+      const axis = sub(s.ankle[k], s.hip[k])
+      const t = dot(sub(s.knee[k], s.hip[k]), axis) / dot(axis, axis)
+      const bend = sub(s.knee[k], add(s.hip[k], mul(axis, t)))
+      const bh = [bend[0], 0, bend[2]] as const
+      const foot = [s.toe[k][0] - s.heel[k][0], 0, s.toe[k][2] - s.heel[k][2]] as const
+      if (Math.hypot(bh[0], bh[2]) > 0.3 * len(bend)) {
+        const a = angle(bh, foot)
+        if (a > 25) out.push(`joelho (${k}) dobra a ${Math.round(a)}° da direção do pé (máx. 25)`)
+      }
+    }
   }
   // nada abaixo do chão
   for (const [n, p] of JOINTS(s)) if (p[1] < -1) out.push(`${n} abaixo do chão (${fmt(p[1])} cm)`)
