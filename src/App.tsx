@@ -17,6 +17,8 @@ const AiRoutinePage = lazy(() => import('./pages/AiRoutinePage'))
 const AiReviewPage = lazy(() => import('./pages/AiReviewPage'))
 const CicloPage = lazy(() => import('./pages/CicloPage'))
 const FerramentasPage = lazy(() => import('./pages/FerramentasPage'))
+// estúdio de revisão das animações: só em desenvolvimento (no build, import.meta.env.DEV = false e o código sai)
+const EstudioPage = import.meta.env.DEV ? lazy(() => import('./pages/EstudioPage')) : null
 
 const Lazy = ({ title, children }: { title: string; children: ReactNode }) => (
   <Suspense fallback={<Screen title={title}>Carregando…</Screen>}>{children}</Suspense>
@@ -99,6 +101,16 @@ export default function App() {
             </Lazy>
           }
         />
+        {EstudioPage && (
+          <Route
+            path="/estudio"
+            element={
+              <Lazy title="Estúdio">
+                <EstudioPage />
+              </Lazy>
+            }
+          />
+        )}
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/sessao/:id" element={<SessionPage />} />
         <Route path="/exercicios" element={<Catalog />} />
