@@ -83,7 +83,7 @@ export const terra: ExerciseSpec = {
     { name: 'Joelhos estendidos no travamento', at: { pose: 'Travamento' }, test: lib.knee(170, 180) },
     { name: 'Tronco vertical no travamento (sem inclinar para trás)', at: { pose: 'Travamento' }, test: lib.trunk(0, 6) },
   ],
-  review: { status: 'rascunho' },
+  review: { status: 'verificado', notes: 'Folha de contato conferida; aguarda revisão técnica humana.' },
 }
 
 export default terra

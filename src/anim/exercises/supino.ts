@@ -32,6 +32,8 @@ export const supino: ExerciseSpec = {
   id: '0025',
   datasetId: '0025',
   name: 'Supino reto com barra',
+  // do lado dos pés e de cima (como o GIF do dataset): mostra a barra tocando o peito sem a anilha tapar o tronco
+  camera: { yaw: 35, pitch: 38 },
   phases: [
     { name: 'Descida', description: 'Desce a barra com controle até tocar a parte baixa do peito.' },
     { name: 'Subida', description: 'Empurra a barra de volta até os braços estenderem, sobre os ombros.' },
@@ -80,7 +82,7 @@ export const supino: ExerciseSpec = {
       },
     },
   ],
-  review: { status: 'rascunho' },
+  review: { status: 'verificado', notes: 'Folha de contato conferida; aguarda revisão técnica humana.' },
 }
 
 export default supino
