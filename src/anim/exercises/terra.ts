@@ -85,3 +85,5 @@ export const terra: ExerciseSpec = {
   ],
   review: { status: 'rascunho' },
 }
+
+export default terra

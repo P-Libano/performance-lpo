@@ -23,6 +23,11 @@ export interface PoseSpec {
   pitch: number
   /** Giro do corpo todo em torno da vertical (graus; + = vira para a esquerda). */
   yaw?: number
+  /**
+   * Giro do tronco em torno do próprio eixo (pelve → peito), em graus; + = o peito vira para a esquerda do
+   * atleta. Ex.: prancha com rotação (de bruços → de lado), rotação de tronco.
+   */
+  twist?: number
   /** Cabeça em relação ao tronco (graus; + = queixo para baixo). */
   head?: number
   /** Centro de cada mão (pegada). */
@@ -34,13 +39,19 @@ export interface PoseSpec {
 }
 
 /** Referencial do tronco a partir de pitch/yaw. */
-export function trunkFrame(pitch: number, yaw = 0): { up: V3; front: V3; left: V3 } {
+export function trunkFrame(pitch: number, yaw = 0, twist = 0): { up: V3; front: V3; left: V3 } {
   const Z = v(0, 0, 1)
   const Y = v(0, 1, 0)
   // pitch: gira em torno do eixo esquerdo; positivo leva o "para cima" do tronco para +x (à frente)
   let up = rotate(v(0, 1, 0), Z, -pitch)
   let front = rotate(v(1, 0, 0), Z, -pitch)
   let left = Z
+  if (twist) {
+    // em torno do próprio eixo: + leva o peito para a esquerda do atleta
+    // (rotação positiva em torno de `up` leva a frente para a direita; por isso o sinal invertido)
+    front = rotate(front, up, -twist)
+    left = rotate(left, up, -twist)
+  }
   if (yaw) {
     up = rotate(up, Y, yaw)
     front = rotate(front, Y, yaw)
@@ -118,7 +129,7 @@ const sideSign = (s: Side) => (s === 'L' ? 1 : -1)
 
 /** Monta o esqueleto de uma pose. */
 export function solve(p: PoseSpec): Skeleton {
-  const { up, front, left } = trunkFrame(p.pitch, p.yaw)
+  const { up, front, left } = trunkFrame(p.pitch, p.yaw, p.twist)
   const pelvis = p.pelvis
   const chest = add(pelvis, mul(up, SEG.trunk))
   const neck = add(chest, mul(up, SEG.neck))
@@ -185,6 +196,7 @@ export function mixPose(a: PoseSpec, b: PoseSpec, t: number): PoseSpec {
     pelvis: lerp3(a.pelvis, b.pelvis, t),
     pitch: lerp(a.pitch, b.pitch, t),
     yaw: lerp(a.yaw ?? 0, b.yaw ?? 0, t),
+    twist: lerp(a.twist ?? 0, b.twist ?? 0, t),
     head: lerp(a.head ?? 0, b.head ?? 0, t),
     hands: sidesLerp(a.hands, b.hands, (x, y) => lerp3(x, y, t)),
     feet: sidesLerp(a.feet, b.feet, (x, y) => ({ ankle: lerp3(x.ankle, y.ankle, t), toe: lerp3(x.toe, y.toe, t) })),

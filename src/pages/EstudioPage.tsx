@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { BodyMap } from '../anim/BodyMap'
 import { runChecks } from '../anim/checks'
 import { EXERCISES } from '../anim/exercises'
+import { AnimPlayer } from '../anim/render/AnimPlayer'
 import type { ExerciseSpec } from '../anim/spec'
 import { ExerciseGif } from '../components/ExerciseMedia'
 import { Chip, Screen } from '../components/ui'
@@ -39,11 +40,20 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-/** Espaço da animação própria: o player entra aqui (src/anim/render/AnimPlayer). */
-export type AnimSlot = (props: { spec: ExerciseSpec; speed: number }) => ReactNode
-let animSlot: AnimSlot | null = null
-export const registerAnimSlot = (slot: AnimSlot) => {
-  animSlot = slot
+/** Poses-chave paradas, lado a lado (o que a folha de contato mostra). */
+function KeyPoses({ spec }: { spec: ExerciseSpec }) {
+  return (
+    <div className="mt-3 grid grid-cols-3 gap-1.5">
+      {spec.frames.map((f, i) => (
+        <figure key={i}>
+          <AnimPlayer spec={{ ...spec, frames: [{ ...f, moveMs: 150 }, { ...f, moveMs: 150 }] }} still className="aspect-square rounded-lg" />
+          <figcaption className="mt-0.5 text-[10px] leading-tight text-muted">
+            {i + 1}. {f.name ?? '—'} · {f.phase}
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  )
 }
 
 function Review({ spec }: { spec: ExerciseSpec }) {
@@ -67,11 +77,7 @@ function Review({ spec }: { spec: ExerciseSpec }) {
       <div className="mt-3 grid grid-cols-2 gap-2">
         <div>
           <p className="mb-1 text-xs text-muted">Nossa animação</p>
-          {animSlot ? (
-            animSlot({ spec, speed })
-          ) : (
-            <div className="grid aspect-square place-items-center rounded-xl bg-surface-2 p-3 text-center text-xs text-muted">Renderizador ainda não conectado</div>
-          )}
+          <AnimPlayer spec={spec} speed={speed} />
         </div>
         <div>
           <p className="mb-1 text-xs text-muted">Referência: GIF do dataset</p>
@@ -91,6 +97,8 @@ function Review({ spec }: { spec: ExerciseSpec }) {
           </button>
         ))}
       </div>
+
+      <KeyPoses spec={spec} />
 
       <Section title={`Verificações automáticas (${failures.length ? `${failures.length} falha${failures.length > 1 ? 's' : ''}` : 'todas ok'})`}>
         {failures.length ? (

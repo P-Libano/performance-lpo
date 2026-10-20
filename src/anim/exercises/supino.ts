@@ -82,3 +82,5 @@ export const supino: ExerciseSpec = {
   ],
   review: { status: 'rascunho' },
 }
+
+export default supino

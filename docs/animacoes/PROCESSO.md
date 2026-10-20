@@ -88,6 +88,41 @@ Reprovado: anote em `review.notes` o que mudar e volte à etapa 2.
 Nada a fazer: o app passa a usar a animação própria assim que o status é `revisado`. Para despublicar,
 volte o status para `verificado` (o GIF do dataset reaparece).
 
+## Como começar um exercício (passo a passo prático)
+
+1. Copie `src/anim/exercises/terra.ts` (exemplo de referência) para `src/anim/exercises/<nome>.ts`.
+   O arquivo precisa terminar com `export default <spec>` — o cadastro é automático (não edite `index.ts`).
+2. Preencha a ficha técnica (etapa 1) **antes** das poses.
+3. Escreva as poses-chave (etapa 2), dando `name` às poses que terão restrições próprias.
+4. Declare as restrições (etapa 3) e rode `npx vitest run src/anim` até ficar verde.
+5. Gere a folha de contato: `npm run anim:sheet -- <id>` e **olhe a imagem** comparando com o GIF do dataset.
+   Teste verde não basta: a folha é onde aparecem pose estranha, câmera ruim e aparelho tapando o movimento.
+6. Ajuste e repita 4–5. Com tudo certo, `review.status = 'verificado'` e peça a revisão humana (etapa 4).
+
+### Câmera
+
+Escolha `camera` (no arquivo do exercício) comparando com o GIF do dataset: o ângulo precisa **mostrar o
+ponto técnico** (ex.: supino visto do lado dos pés e de cima, para ver a barra tocar o peito; leg press de
+perfil, para a plataforma não tapar as pernas). Convenção em `spec.ts` (`yaw` 0 = de frente, 90 = perfil
+esquerdo, 180 = de costas).
+
+### Erros comuns (e a ferramenta que evita)
+
+| Erro | Como evitar |
+|---|---|
+| Braço "quase reto" (164° em vez de 172°) | Use `hang()` (braços pendurados) ou `pressUp()` (braços para cima): calculam a altura exata |
+| Mão "solta" da barra entre duas poses (verificação de alcance) | A interpolação é em linha reta; acrescente uma pose intermediária no ponto do caminho que curva (ex.: barra no meio da coxa no terra) |
+| Restrição aplicada à pose errada | Dê `name` à pose e use `at: { pose: 'Nome' }` em vez de `at: { phase }` |
+| Teste verde mas visual errado | Sempre gere e olhe a folha de contato; se faltar uma restrição que pegaria o erro, crie-a |
+| Sinal invertido (giro, lado) | Escreva um teste do caso simples (ex.: "em pé, twist +90 vira o peito para a esquerda") |
+
+### Quando o motor não tem o que você precisa
+
+Não contorne nem altere arquivos compartilhados (`pose.ts`, `checks.ts`, `props.ts`, `render/`). Pare e
+registre o pedido (o que falta, para qual exercício, por quê). Isso inclui: aparelho que não existe, postura
+que o construtor de poses não descreve, restrição que deveria estar na biblioteca. Restrições específicas de
+um exercício podem ficar no próprio arquivo dele.
+
 ## Onde fica cada coisa
 
 | O quê | Onde |

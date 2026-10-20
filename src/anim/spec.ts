@@ -39,7 +39,12 @@ export interface ExerciseSpec {
   /** GIF do dataset usado como referência na revisão (o que esta animação substitui) */
   datasetId: string
   name: string
-  /** câmera (graus): giro em torno da vertical e elevação; padrão 3/4 frontal como os GIFs do dataset */
+  /**
+   * Câmera (graus). `yaw`: de onde se olha, medido a partir da frente do atleta (+x) girando para a esquerda
+   * dele (+z): 0 = de frente, 90 = perfil esquerdo, 180 = de costas. `pitch`: elevação (acima do atleta).
+   * Padrão (render/camera.ts, DEFAULT_CAMERA) = { yaw: 52, pitch: 12 }: o 3/4 dos GIFs do dataset.
+   * Troque quando o aparelho tapar o movimento (ex.: leg press de perfil, yaw ≈ 85).
+   */
   camera?: { yaw: number; pitch: number }
   phases: { name: string; description: string }[]
   /** pontos técnicos (cada um verificável → vira um `check`) */

@@ -1,9 +1,16 @@
 import type { ExerciseSpec } from '../spec'
-import { supino } from './supino'
-import { terra } from './terra'
 
-/** Todos os exercícios com animação própria (qualquer status). O app só usa os `revisado`. */
-export const EXERCISES: readonly ExerciseSpec[] = [terra, supino]
+/**
+ * Todos os exercícios com animação própria (qualquer status). O app só usa os `revisado`.
+ * Cadastro automático: todo arquivo desta pasta com `export default` de um ExerciseSpec entra aqui —
+ * para criar um exercício basta criar o arquivo (docs/animacoes/PROCESSO.md).
+ */
+const modules = import.meta.glob<{ default?: ExerciseSpec }>('./*.ts', { eager: true })
+
+export const EXERCISES: readonly ExerciseSpec[] = Object.entries(modules)
+  .filter(([path, m]) => !path.endsWith('/index.ts') && m.default)
+  .map(([, m]) => m.default!)
+  .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
 
 export const EXERCISE_BY_ID: ReadonlyMap<string, ExerciseSpec> = new Map(EXERCISES.map((e) => [e.id, e]))
 

@@ -19,6 +19,11 @@ describe('esqueleto 3D', () => {
     expect(r(trunkFrame(-90).up)).toEqual([-1, 0, 0]) // de costas: cabeça para trás
     expect(r(trunkFrame(-90).front)).toEqual([0, 1, 0]) // olhando para o teto
     expect(r(trunkFrame(0, 90).front)).toEqual([0, 0, -1])
+    // twist: em pé, +90 vira o peito para a esquerda do atleta (+z)
+    expect(r(trunkFrame(0, 0, 90).front)).toEqual([0, 0, 1])
+    // de bruços (prancha) + 90 de twist: peito para a esquerda, deitado de lado
+    expect(r(trunkFrame(90, 0, 90).front)).toEqual([0, 0, 1])
+    expect(r(trunkFrame(90, 0, 90).left)).toEqual([0, 1, 0])
   })
 
   it('cinemática de 2 ossos: comprimentos exatos e dobra para o lado do guia', () => {
