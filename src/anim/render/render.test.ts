@@ -66,6 +66,8 @@ describe('motor de desenho — aparelhos', () => {
     { kind: 'cable', pulley: v(0, 100, 80), handle: 'single' },
     { kind: 'pullupBar', x: 0, y: 228, halfLength: 60 },
     { kind: 'legPress', seat: { x0: -45, x1: 12, y: 50 }, back: { hingeX: -38, deg: 50 }, rail: 45 },
+    { kind: 'legPress', seat: { x0: -45, x1: 5, y: 50 }, back: { hingeX: -30, deg: 35 }, rail: 45, handles: { x: -22, y: 58 } },
+    { kind: 'latPulldown', seat: { x0: -30, x1: 18, y: 45 }, thighPad: { x: 30, y: 70 }, pulley: v(15, 232, 0), towerX: 88 },
     { kind: 'mat', x0: -100, x1: 100 },
   ]
   it('toda variação de aparelho desenha, e cabe no quadro', () => {
@@ -80,7 +82,7 @@ describe('motor de desenho — aparelhos', () => {
       expect(Number.isFinite(x + y + h)).toBe(true)
     }
     // todos os tipos de PropSpec cobertos
-    expect([...kinds].sort()).toEqual(['barbell', 'bench', 'cable', 'dumbbells', 'legPress', 'mat', 'pullupBar'])
+    expect([...kinds].sort()).toEqual(['barbell', 'bench', 'cable', 'dumbbells', 'latPulldown', 'legPress', 'mat', 'pullupBar'])
   })
 
   it('anilha do lado de lá é pintada antes do corpo e a do lado de cá depois (ordem por profundidade)', () => {

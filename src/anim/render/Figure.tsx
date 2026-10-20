@@ -151,6 +151,18 @@ function bendDir(root: V3, mid: V3, tip: V3, fallback: V3): V3 {
   return len(off) > 0.05 ? unit(off) : unit(reject(fallback, axis))
 }
 
+/** Perna do short: de um pouco acima da articulação do quadril (cobre a "tampa" da coxa) até 25% da coxa. */
+const SHORTS = { from: -0.2, to: 0.25 }
+
+/** Borda (bainha) visível de uma seção do membro: arco da frente visível. */
+function hemArc(cam: Camera, f: Frame3, prof: Prof, u: number): Pt[] {
+  const sec = prof(u)
+  const vis = Math.atan2(dot(f.L, cam.toCam) / sec.rL, dot(f.N, cam.toCam) / sec.rN) / (Math.PI / 180)
+  return Array.from({ length: 13 }, (_, i) => vis - 88 + (176 * i) / 12).map((a) =>
+    cam.project(add(add(add(f.o, mul(f.A, u * f.len)), mul(f.N, sec.rN * Math.cos((a * Math.PI) / 180))), mul(f.L, sec.rL * Math.sin((a * Math.PI) / 180)))),
+  )
+}
+
 function legPrims(cam: Camera, s: Skeleton, k: Side, lv: Levels, tone: Tone): Prim[] {
   const hip = s.hip[k]
   const knee = s.knee[k]
@@ -163,7 +175,6 @@ function legPrims(cam: Camera, s: Skeleton, k: Side, lv: Levels, tone: Tone): Pr
   const shinP = cone(R.knee * 0.95, R.ankle)
   const quad = add(hip, add(mul(thighF.A, thighF.len * 0.42), mul(thighF.N, 1.6)))
   const calf = add(knee, add(mul(shinF.A, shinF.len * 0.3), mul(shinF.N, -2)))
-  const shortsEnd = add(hip, add(mul(thighF.A, thighF.len * 0.17), mul(thighF.N, 0.4)))
 
   // pé descalço: perfil calcanhar → dedos, extrudado na largura do pé
   const heel = s.heel[k]
@@ -207,7 +218,10 @@ function legPrims(cam: Camera, s: Skeleton, k: Side, lv: Levels, tone: Tone): Pr
         <Detail pts={seam(cam, thighF, thighP, 100, 0.3, 0.92)} />
         <Detail pts={seam(cam, thighF, thighP, -35, 0.45, 0.95)} />
         <Muscles cam={cam} part="thigh" f={thighF} prof={thighP} lv={lv} />
-        <path d={pathD(blob(cam, [[lerp3(hip, knee, 0.05), R.hip - 1.6], [shortsEnd, R.thighMid]]))} fill={tone.shorts} stroke={C.line} strokeWidth={LINE} strokeLinejoin="round" />
+        {/* perna do short: faixa na SUPERFÍCIE da coxa (só a parte visível), até ~25% da coxa. Com a coxa
+            apontando para a câmera ela vira um anel fino atrás do joelho, nunca um disco por cima dele. */}
+        <path d={pathD(patch(cam, thighF, thighP, SHORTS.from, SHORTS.to, 0, 180, false))} fill={tone.shorts} />
+        <polyline points={polyPts(hemArc(cam, thighF, thighP, SHORTS.to))} fill="none" stroke={C.line} strokeWidth={LINE} strokeLinecap="round" />
       </Solid>
     ),
   }

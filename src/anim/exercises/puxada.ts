@@ -1,7 +1,7 @@
 import type { Skeleton } from '../body'
 import { lib } from '../checks'
 import { both, footFlat, mirrorFoot, mirrorZ, pressUp, solve, type PoseSpec } from '../pose'
-import { midHands } from '../props'
+import { DIM, midHands } from '../props'
 import type { ExerciseSpec } from '../spec'
 import { add, angle, mul, v } from '../vec'
 
@@ -11,8 +11,8 @@ import { add, angle, mul, v } from '../vec'
  * joelhos a ~90°. A barra desce na vertical, sob a roldana, do alto (braços estendidos) até a parte alta
  * do peito, com o tronco levemente inclinado para trás (peito "para cima").
  *
- * Limitação do motor (ver relatório): a biblioteca não tem assento com apoio de coxas/joelhos nem a torre da
- * puxada alta; o assento é o `bench` e a torre é a coluna do `cable` (sem a viga que leva à roldana).
+ * Aparelho: `latPulldown` (assento, rolos do apoio de coxas logo acima das coxas, perto dos joelhos, torre à
+ * frente das pontas dos pés com viga até a roldana).
  */
 
 const SEAT = 45
@@ -36,6 +36,12 @@ const PULLEY = v(BAR_X, 232, 0)
 const TOP: PoseSpec = { ...body(-10, -4), hands: pressUp(body(-10, -4), BAR_X, GRIP_Z) }
 /** Barra na parte alta do peito, cotovelos para baixo e para trás, peito aberto. */
 const BOTTOM: PoseSpec = { ...LOW, hands: both(v(BAR_X, BAR_LOW[1], GRIP_Z), mirrorZ) }
+
+// Rolos do apoio de coxas: encostados em cima da coxa, a 80% do caminho do quadril ao joelho
+// (raio da coxa ali ≈ 7 cm + raio do rolo 5,5 cm + 0,5 cm de folga). Pelve e pés fixos: as coxas não se mexem.
+const topSk = solve(TOP)
+const ON_THIGH = add(topSk.hip.L, mul(add(topSk.knee.L, mul(topSk.hip.L, -1)), 0.8))
+const THIGH_PAD = { x: ON_THIGH[0], y: ON_THIGH[1] + 7 + DIM.latPulldown.rollerRadius + 0.5 }
 
 /** Inclinação do tronco para trás (graus; negativo = inclinado à frente). */
 const leanBack = (s: Skeleton) => (s.up[0] <= 0 ? 1 : -1) * angle(s.up, v(0, 1, 0))
@@ -63,8 +69,8 @@ export const puxada: ExerciseSpec = {
   muscleSource:
     'NSCA — Essentials of Strength Training and Conditioning, 4ª ed. (Haff & Triplett, 2016), cap. 15, técnica da puxada na polia alta (lat pulldown): grande dorsal, redondo maior, trapézio médio, romboides e deltoide posterior; Delavier, Guia dos Movimentos de Musculação (bíceps e braquial como auxiliares); distribuição por fase a validar na revisão.',
   props: [
-    { kind: 'bench', x0: -55, x1: 18, height: SEAT },
-    { kind: 'cable', pulley: PULLEY, handle: 'bar', column: { x: 88, z: 0 } }, // à frente das pontas dos pés (x ≈ 60), para não tapar as pernas
+    // torre à frente das pontas dos pés (x ≈ 60), para não tapar as pernas
+    { kind: 'latPulldown', seat: { x0: -30, x1: 18, y: SEAT }, thighPad: THIGH_PAD, pulley: PULLEY, towerX: 88 },
   ],
   frames: [
     { name: 'Braços estendidos', pose: TOP, moveMs: 1600, holdMs: 400, phase: 'Retorno', ease: 'inout' },
@@ -134,7 +140,7 @@ export const puxada: ExerciseSpec = {
   review: {
     status: 'rascunho',
     notes:
-      'GIF do dataset 2330 mostra outra variação (puxada de pé no crossover, duas manoplas); o texto do dataset e o nome do catálogo descrevem a puxada sentada, que é o que está desenhado. Comparação visual feita com os GIFs 0198/0150 (puxada sentada). Falta assento com apoio de coxas e torre com viga até a roldana na biblioteca de aparelhos.',
+      'GIF do dataset 2330 mostra outra variação (puxada de pé no crossover, duas manoplas); o texto do dataset e o nome do catálogo descrevem a puxada sentada, que é o que está desenhado. Comparação visual feita com os GIFs 0198/0150 (puxada sentada). Aparelho trocado para `latPulldown` (assento, apoio de coxas, torre com viga até a roldana).',
   },
 }
 

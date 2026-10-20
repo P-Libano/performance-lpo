@@ -64,7 +64,7 @@ const TOP = pose(85)
 /** Embaixo: joelhos a ~90°, quadril ainda apoiado (sem a lombar sair do encosto). */
 const BOTTOM = pose(60)
 
-const props: PropSpec[] = [{ kind: 'legPress', seat: { x0: -45, x1: 5, y: SEAT_Y }, back: BACK, rail: RAIL }]
+const props: PropSpec[] = [{ kind: 'legPress', seat: { x0: -45, x1: 5, y: SEAT_Y }, back: BACK, rail: RAIL, handles: { x: HANDS.L[0], y: HANDS.L[1] } }]
 
 const fmt = (n: number) => n.toFixed(1).replace('.', ',')
 /** distância de um ponto à superfície do encosto (ao longo da normal) */

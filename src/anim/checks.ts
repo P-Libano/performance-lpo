@@ -1,7 +1,7 @@
 import { HEIGHT, SIDES, type Side, type Skeleton } from './body'
 import { MUSCLE_IDS } from './muscles'
 import { jointAngle } from './pose'
-import { DIM, midHands, solidsOf, type PropSpec } from './props'
+import { DIM, insideSolid, midHands, solidsAt, type PropSpec } from './props'
 import { cycleMs, sampleAt, type Check, type ExerciseSpec } from './spec'
 import { angle, v, type V3 } from './vec'
 
@@ -288,15 +288,13 @@ function generalFailures(s: Skeleton, props: PropSpec[], keyframe: boolean): str
   if (s.head[1] > HEIGHT * 1.6) out.push('cabeça alta demais')
   // corpo não atravessa sólidos: articulações (exceto pontos de contato: mãos e pés) e pontos AO LONGO dos
   // ossos (uma canela pode atravessar o banco com joelho e tornozelo fora dele)
-  const solids = props.flatMap(solidsOf)
+  // (inclui os que acompanham o corpo, como a plataforma do leg press, e caixas inclinadas)
+  const solids = props.flatMap((p) => solidsAt(p, s))
   if (solids.length) {
     const pts: [string, V3][] = JOINTS(s).filter(([n]) => !CONTACT_OK.test(n))
     for (const [n, p] of segmentPoints(s)) pts.push([n, p])
     for (const box of solids)
-      for (const [n, p] of pts) {
-        const inside = p.every((c, i) => c > box.min[i] + 1 && c < box.max[i] - 1)
-        if (inside) out.push(`${n} dentro do ${box.name}`)
-      }
+      for (const [n, p] of pts) if (insideSolid(box, p)) out.push(`${n} dentro do ${box.name}`)
   }
   return out
 }
