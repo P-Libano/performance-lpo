@@ -1,5 +1,5 @@
 // Folha de contato de uma animação (portão 2 do docs/animacoes/PROCESSO.md).
-// Uso: npm run anim:sheet -- <id>      (ex.: 0032)   ou   npm run anim:sheet -- all
+// Uso: npm run anim:sheet -- <id>      (ex.: 0032)   ou   npm run anim:sheet -- all   [--zoom 2]
 // Gera docs/animacoes/folhas/<id>.html e .png. O PNG usa o Edge/Chrome do sistema (playwright-core,
 // sem baixar navegador): PW_CHANNEL=chrome para usar o Chrome.
 import { execFileSync } from 'node:child_process'
@@ -9,9 +9,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright-core'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const which = process.argv[2]
+const args = process.argv.slice(2)
+const zi = args.indexOf('--zoom')
+// --zoom 2: PNG em 2x (detalhes de mão, pé e contato com o aparelho)
+const zoom = zi >= 0 ? Number(args.splice(zi, 2)[1]) || 2 : 1
+const which = args[0]
 if (!which) {
-  console.error('Uso: npm run anim:sheet -- <id do exercício | all>')
+  console.error('Uso: npm run anim:sheet -- <id do exercício | all> [--zoom 2]')
   process.exit(1)
 }
 const outDir = join(root, 'docs', 'animacoes', 'folhas')
@@ -26,7 +30,7 @@ execFileSync(process.execPath, [join(root, 'node_modules', 'vitest', 'vitest.mjs
 // 2) PNG
 const files = readdirSync(outDir).filter((f) => f.endsWith('.html') && (which === 'all' || f === `${which}.html`))
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'msedge' })
-const page = await browser.newPage({ viewport: { width: 1330, height: 900 } })
+const page = await browser.newPage({ viewport: { width: 1330, height: 900 }, deviceScaleFactor: zoom })
 for (const f of files) {
   await page.goto(pathToFileURL(join(outDir, f)).href)
   await page.waitForTimeout(800) // GIF do dataset

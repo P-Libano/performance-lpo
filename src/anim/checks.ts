@@ -1,4 +1,4 @@
-import { HEIGHT, SIDES, type Skeleton } from './body'
+import { HEIGHT, SIDES, type Side, type Skeleton } from './body'
 import { MUSCLE_IDS } from './muscles'
 import { jointAngle } from './pose'
 import { DIM, midHands, solidsOf, type PropSpec } from './props'
@@ -46,9 +46,9 @@ export const lib = {
     }
     return true
   },
-  /** Calcanhares e pontas no chão (y = floor). */
-  feetFlat: (floorY = 0, tol = 1.5): Check['test'] => (s) => {
-    for (const k of SIDES)
+  /** Calcanhares e pontas no chão (y = floor). `side` = só um pé (unilaterais). */
+  feetFlat: (floorY = 0, tol = 1.5, side?: Side): Check['test'] => (s) => {
+    for (const k of side ? [side] : SIDES)
       for (const [n, p] of [
         ['calcanhar', s.heel[k]],
         ['ponta do pé', s.toe[k]],
@@ -56,17 +56,17 @@ export const lib = {
         if (Math.abs(p[1] - floorY) > tol) return `${n} (${k}) a ${fmt(p[1] - floorY)} cm do apoio`
     return true
   },
-  /** Ângulo interno do joelho (180 = estendido) dentro da faixa. */
-  knee: (min: number, max: number): Check['test'] => (s) => {
-    for (const k of SIDES) {
+  /** Ângulo interno do joelho (180 = estendido) dentro da faixa. `side` = só um lado. */
+  knee: (min: number, max: number, side?: Side): Check['test'] => (s) => {
+    for (const k of side ? [side] : SIDES) {
       const a = jointAngle(s.hip[k], s.knee[k], s.ankle[k])
       if (a < min || a > max) return `joelho (${k}) a ${Math.round(a)}° (esperado ${min}–${max}°)`
     }
     return true
   },
-  /** Ângulo interno do cotovelo dentro da faixa. */
-  elbow: (min: number, max: number): Check['test'] => (s) => {
-    for (const k of SIDES) {
+  /** Ângulo interno do cotovelo dentro da faixa. `side` = só um lado. */
+  elbow: (min: number, max: number, side?: Side): Check['test'] => (s) => {
+    for (const k of side ? [side] : SIDES) {
       const a = jointAngle(s.shoulder[k], s.elbow[k], s.hand[k])
       if (a < min || a > max) return `cotovelo (${k}) a ${Math.round(a)}° (esperado ${min}–${max}°)`
     }
@@ -88,7 +88,11 @@ export const lib = {
     }
     return true
   },
-  /** Abertura dos cotovelos em relação ao tronco (ângulo braço–tronco visto de cima), p. ex. supino ≈ 45–75°. */
+  /**
+   * Ângulo (3D) entre o braço (ombro → cotovelo) e o eixo do tronco apontando para os pés. No supino, é a
+   * "abertura dos cotovelos" (≈ 45–75°); em pé, 0° = braço colado ao lado do corpo. Mesmo cálculo que
+   * `upperArmToTrunk` (nome antigo, mantido).
+   */
   elbowFlare: (min: number, max: number): Check['test'] => (s) => {
     for (const k of SIDES) {
       const arm = [s.elbow[k][0] - s.shoulder[k][0], s.elbow[k][1] - s.shoulder[k][1], s.elbow[k][2] - s.shoulder[k][2]] as const
@@ -96,6 +100,80 @@ export const lib = {
       const a = angle(arm, [-s.up[0], -s.up[1], -s.up[2]])
       if (a < min || a > max) return `braço (${k}) a ${Math.round(a)}° do tronco (esperado ${min}–${max}°)`
     }
+    return true
+  },
+  /** Ângulo braço–tronco (0° = braço colado ao lado do tronco, 90° = braço perpendicular, 180° = acima da cabeça). */
+  upperArmToTrunk: (min: number, max: number, side?: Side): Check['test'] => (s) => {
+    for (const k of side ? [side] : SIDES) {
+      const arm = [s.elbow[k][0] - s.shoulder[k][0], s.elbow[k][1] - s.shoulder[k][1], s.elbow[k][2] - s.shoulder[k][2]] as const
+      const a = angle(arm, [-s.up[0], -s.up[1], -s.up[2]])
+      if (a < min || a > max) return `braço (${k}) a ${Math.round(a)}° do tronco (esperado ${min}–${max}°)`
+    }
+    return true
+  },
+  /**
+   * Inclinação do tronco COM SINAL, no plano sagital do mundo: + = inclinado à frente (terra), − = para trás
+   * (puxada, recuperação do arranco). Diferente de `trunk`, que mede só o ângulo com a vertical.
+   */
+  trunkLean: (min: number, max: number): Check['test'] => (s) => {
+    const a = Math.atan2(s.up[0], s.up[1]) / (Math.PI / 180)
+    return (a >= min && a <= max) || `tronco a ${Math.round(a)}° (${a >= 0 ? 'à frente' : 'para trás'}; esperado ${min}–${max}°)`
+  },
+  /** Sentado: pelve 8–16 cm acima do assento (as costas podem estar livres — diferente de `backOn`). */
+  seatedOn: (surfaceY: number): Check['test'] => (s) => {
+    const h = s.pelvis[1] - surfaceY
+    return (h >= 8 && h <= 16) || `pelve a ${fmt(h)} cm do assento (esperado 8–16)`
+  },
+  /** Corpo alinhado (prancha, flexão): ângulo ombro–quadril–tornozelo ≥ `min` (180 = reta), média dos lados. */
+  bodyLine: (min = 165): Check['test'] => (s) => {
+    const a = (jointAngle(s.shoulder.L, s.hip.L, s.ankle.L) + jointAngle(s.shoulder.R, s.hip.R, s.ankle.R)) / 2
+    return a >= min || `corpo dobrado no quadril (${Math.round(a)}°; mínimo ${min}°)`
+  },
+  /** Ângulo tronco–coxa no quadril (180 = em pé), p. ex. fundo do leg press ≥ 45° (lombar não descola). */
+  hipAngle: (min: number, max = 180, side?: Side): Check['test'] => (s) => {
+    for (const k of side ? [side] : SIDES) {
+      const a = jointAngle(s.chest, s.hip[k], s.knee[k])
+      if (a < min || a > max) return `quadril (${k}) a ${Math.round(a)}° (esperado ${min}–${max}°)`
+    }
+    return true
+  },
+  /** Joelho na direção da ponta do pé (sem "joelho para dentro"): desvio máximo `tol` graus, visto de cima. */
+  kneeTracksFoot: (tol = 15, side?: Side): Check['test'] => (s) => {
+    for (const k of side ? [side] : SIDES) {
+      const knee = [s.knee[k][0] - s.ankle[k][0], 0, s.knee[k][2] - s.ankle[k][2]] as const
+      const foot = [s.toe[k][0] - s.heel[k][0], 0, s.toe[k][2] - s.heel[k][2]] as const
+      if (Math.hypot(knee[0], knee[2]) < 3) continue // joelho quase sobre o tornozelo: sem direção
+      const a = angle(knee, foot)
+      if (a > tol) return `joelho (${k}) a ${Math.round(a)}° da direção do pé (máx. ${tol})`
+    }
+    return true
+  },
+  /** Pés fora do chão (salto, pendurado): todos os pontos do pé acima de `min` cm. */
+  feetOffFloor: (min = 3, floorY = 0): Check['test'] => (s) => {
+    for (const k of SIDES)
+      for (const p of [s.heel[k], s.toe[k], s.ankle[k]]) if (p[1] - floorY < min) return `pé (${k}) a ${fmt(p[1] - floorY)} cm do chão (mín. ${min})`
+    return true
+  },
+  /** Diferença de altura entre dois pontos do esqueleto: b.y − a.y dentro de [min, max] (cm). */
+  heightRel: (a: (s: Skeleton) => V3, b: (s: Skeleton) => V3, min: number, max: number, label: string): Check['test'] => (s) => {
+    const d = b(s)[1] - a(s)[1]
+    return (d >= min && d <= max) || `${label}: ${fmt(d)} cm (esperado ${min}–${max})`
+  },
+  /**
+   * Sola apoiada numa superfície (plataforma do leg press, banco inclinado): calcanhar e ponta à distância
+   * `tol` do plano que passa por `point` com normal `normal` (apontando para fora da superfície).
+   */
+  soleOn: (point: V3, normal: V3, tol = 2, side?: Side): Check['test'] => (s) => {
+    const n = Math.hypot(...normal)
+    const dist = (p: V3) => ((p[0] - point[0]) * normal[0] + (p[1] - point[1]) * normal[1] + (p[2] - point[2]) * normal[2]) / n
+    for (const k of side ? [side] : SIDES)
+      for (const [nome, p] of [
+        ['calcanhar', s.heel[k]],
+        ['ponta do pé', s.toe[k]],
+      ] as const) {
+        const d = dist(p)
+        if (Math.abs(d) > tol) return `${nome} (${k}) a ${fmt(d)} cm da superfície`
+      }
     return true
   },
   /** Antebraços na vertical (cotovelo embaixo da mão), ± tol graus — supino, desenvolvimento. */
@@ -128,6 +206,22 @@ const JOINTS = (s: Skeleton): [string, V3][] => [
   ),
 ]
 
+/** Pontos internos dos ossos (25/50/75%) para a verificação de colisão com aparelhos. */
+function segmentPoints(s: Skeleton): [string, V3][] {
+  const out: [string, V3][] = []
+  const along = (n: string, a: V3, b: V3) => {
+    for (const t of [0.25, 0.5, 0.75]) out.push([`${n} (${t * 100}%)`, [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]])
+  }
+  along('tronco', s.pelvis, s.chest)
+  for (const k of SIDES) {
+    along(`coxa ${k}`, s.hip[k], s.knee[k])
+    along(`canela ${k}`, s.knee[k], s.ankle[k])
+    along(`braço ${k}`, s.shoulder[k], s.elbow[k])
+    along(`antebraço ${k}`, s.elbow[k], s.wrist[k])
+  }
+  return out
+}
+
 /** Partes do corpo que podem tocar um sólido (mãos no banco, pés no apoio). */
 const CONTACT_OK = /^(hand|wrist|heel|toe|ankle)/
 
@@ -144,7 +238,10 @@ export function specErrors(spec: ExerciseSpec): string[] {
   if (!spec.phases.length) errs.push('sem fases')
   if (spec.keyPoints.length < 3) errs.push('menos de 3 pontos técnicos')
   if (!spec.muscleSource.trim()) errs.push('músculos sem fonte')
-  if (spec.frames.length < 2 || spec.frames.length > 6) errs.push('use de 2 a 6 poses-chave')
+  if (spec.frames.length < 2 || spec.frames.length > 8) errs.push('use de 2 a 8 poses-chave')
+  const mid = spec.frames[Math.floor(spec.frames.length / 2)]
+  if (mid && mid.holdMs <= 0)
+    errs.push(`a pose do meio (nº ${Math.floor(spec.frames.length / 2) + 1}) vira a miniatura do app: precisa de holdMs > 0 — ponha nela a pose mais representativa`)
   for (const f of spec.frames) if (!names.has(f.phase)) errs.push(`pose-chave com fase desconhecida: "${f.phase}"`)
   for (const p of spec.phases) {
     const m = spec.muscles.find((x) => x.phase === p.name)
@@ -181,18 +278,26 @@ function generalFailures(s: Skeleton, props: PropSpec[], keyframe: boolean): str
     const elbowA = jointAngle(s.shoulder[k], s.elbow[k], s.hand[k])
     if (kneeA < 30) out.push(`joelho (${k}) fechado demais (${Math.round(kneeA)}°)`)
     if (elbowA < 25) out.push(`cotovelo (${k}) fechado demais (${Math.round(elbowA)}°)`)
+    // quadril: ângulo tronco–coxa (180 = em pé); abaixo de ~25° o tronco "entra" na coxa
+    const hipA = jointAngle(s.chest, s.hip[k], s.knee[k])
+    if (hipA < 25) out.push(`quadril (${k}) fechado demais (${Math.round(hipA)}° entre tronco e coxa)`)
   }
   // nada abaixo do chão
   for (const [n, p] of JOINTS(s)) if (p[1] < -1) out.push(`${n} abaixo do chão (${fmt(p[1])} cm)`)
   // cabeça não fica abaixo do joelho em pé, etc.: alturas absurdas
   if (s.head[1] > HEIGHT * 1.6) out.push('cabeça alta demais')
-  // corpo não atravessa sólidos (exceto pontos de contato: mãos e pés)
-  for (const box of props.flatMap(solidsOf))
-    for (const [n, p] of JOINTS(s)) {
-      if (CONTACT_OK.test(n)) continue
-      const inside = p.every((c, i) => c > box.min[i] + 1 && c < box.max[i] - 1)
-      if (inside) out.push(`${n} dentro do ${box.name}`)
-    }
+  // corpo não atravessa sólidos: articulações (exceto pontos de contato: mãos e pés) e pontos AO LONGO dos
+  // ossos (uma canela pode atravessar o banco com joelho e tornozelo fora dele)
+  const solids = props.flatMap(solidsOf)
+  if (solids.length) {
+    const pts: [string, V3][] = JOINTS(s).filter(([n]) => !CONTACT_OK.test(n))
+    for (const [n, p] of segmentPoints(s)) pts.push([n, p])
+    for (const box of solids)
+      for (const [n, p] of pts) {
+        const inside = p.every((c, i) => c > box.min[i] + 1 && c < box.max[i] - 1)
+        if (inside) out.push(`${n} dentro do ${box.name}`)
+      }
+  }
   return out
 }
 

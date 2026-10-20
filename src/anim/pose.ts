@@ -1,5 +1,5 @@
 import { ARM, LEG, SEG, SIDES, type Side, type Skeleton } from './body'
-import { DEG, add, cross, dist, len, lerp3, mul, reject, rotate, sub, unit, v, type V3 } from './vec'
+import { DEG, add, cross, dist, dot, len, lerp3, mul, reject, rotate, sub, unit, v, type V3 } from './vec'
 
 /**
  * Pose = pontos de contato + orientação do tronco. Quem desenha um exercício diz ONDE ficam pelve, mãos e
@@ -7,10 +7,15 @@ import { DEG, add, cross, dist, len, lerp3, mul, reject, rotate, sub, unit, v, t
  * sempre o real e dá para verificar se a pose é alcançável (reachError).
  */
 
-/** Pé: tornozelo e ponta do pé (onde o pé toca/aponta). O calcanhar é derivado. */
+/**
+ * Pé: tornozelo e ponta do pé (onde o pé toca/aponta). O calcanhar é derivado: fica do lado da SOLA, que é o
+ * lado para onde a canela aponta (joelho → tornozelo). Em pé é "para baixo"; no leg press a sola fica virada
+ * para a plataforma; no búlgaro, o peito do pé de trás apoia no banco. `sole` força a direção da sola.
+ */
 export interface Foot {
   ankle: V3
   toe: V3
+  sole?: V3
 }
 
 export interface PoseSpec {
@@ -118,6 +123,43 @@ export function hang(p: Omit<PoseSpec, 'hands'>, x: number, z: number, straight 
 /** Braços estendidos para CIMA (topo do supino, desenvolvimento, barra acima da cabeça). */
 export const pressUp = (p: Omit<PoseSpec, 'hands'>, x: number, z: number, straight = 0.996) => hang(p, x, z, straight, 1)
 
+/** Ombros da pose (independem das mãos): base para calcular mãos relativas ao ombro. */
+export const shouldersOf = (p: Omit<PoseSpec, 'hands'>): Record<Side, V3> =>
+  solve({ ...p, hands: { L: p.pelvis, R: p.pelvis } } as PoseSpec).shoulder
+
+/**
+ * Braços estendidos ao lado do corpo (halteres na rosca, afundo, encolhimento): mão na vertical do ombro,
+ * deslocada `out` cm para fora (z) e `fwd` cm para a frente (x). Sem precisar calcular o x do ombro à mão.
+ */
+export function armsAtSides(p: Omit<PoseSpec, 'hands'>, out = 3, fwd = 0, straight = 0.996): Record<Side, V3> {
+  const sh = shouldersOf(p)
+  const reach = (ARM.a + ARM.b) * straight
+  const at = (s: Side): V3 => {
+    const k = s === 'L' ? 1 : -1
+    return v(sh[s][0] + fwd, sh[s][1] - Math.sqrt(Math.max(0, reach * reach - fwd * fwd - out * out)), sh[s][2] + k * out)
+  }
+  return { L: at('L'), R: at('R') }
+}
+
+/**
+ * Espelha a pose inteira (esquerda ↔ direita): troca mãos, pés e guias de lado, inverte z, giro (`yaw`) e
+ * rotação do tronco (`twist`). Para exercícios unilaterais/alternados descreverem o outro lado.
+ */
+export function mirrorPose(p: PoseSpec): PoseSpec {
+  const swap = <T>(r: Partial<Record<Side, T>> | undefined, f: (t: T) => T) => (r ? { L: r.R && f(r.R), R: r.L && f(r.L) } : undefined)
+  const foot = (f: Foot): Foot => ({ ankle: mirrorZ(f.ankle), toe: mirrorZ(f.toe), ...(f.sole ? { sole: mirrorZ(f.sole) } : {}) })
+  return {
+    ...p,
+    pelvis: mirrorZ(p.pelvis),
+    yaw: -(p.yaw ?? 0),
+    twist: -(p.twist ?? 0),
+    hands: { L: mirrorZ(p.hands.R), R: mirrorZ(p.hands.L) },
+    feet: { L: foot(p.feet.R), R: foot(p.feet.L) },
+    elbowPole: swap(p.elbowPole, mirrorZ) as PoseSpec['elbowPole'],
+    kneePole: swap(p.kneePole, mirrorZ) as PoseSpec['kneePole'],
+  }
+}
+
 /** Espelha um ponto do lado esquerdo (z+) para o direito. */
 export const mirrorZ = (p: V3): V3 => v(p[0], p[1], -p[2])
 
@@ -148,10 +190,13 @@ export function solve(p: PoseSpec): Skeleton {
     const kneePole = p.kneePole?.[s] ?? add(front, mul(left, k * 0.25))
     const legIk = ik2(hip, foot.ankle, LEG.a, LEG.b, kneePole)
     const ankle = legIk.tip
-    // calcanhar: atrás e abaixo do tornozelo, no plano que contém o pé e a vertical do mundo
+    // calcanhar: atrás do tornozelo e do lado da sola. A direção da sola é perpendicular ao pé no plano
+    // vertical do pé; o SENTIDO vem da canela (a sola fica do lado para onde a canela aponta), então funciona
+    // em pé, deitado, no leg press (sola para a plataforma) e com o pé de trás apoiado no banco.
     const fwd = unit(sub(foot.toe, foot.ankle))
-    let down = reject(v(0, -1, 0), fwd)
+    let down = foot.sole ? reject(foot.sole, fwd) : reject(v(0, -1, 0), fwd)
     if (len(down) < 1e-3) down = reject(mul(front, -1), fwd)
+    if (!foot.sole && dot(down, sub(ankle, legIk.mid)) < 0) down = mul(down, -1)
     const heel = add(add(ankle, mul(unit(down), 8.5)), mul(fwd, -4))
     out.hip[s] = hip
     out.knee[s] = legIk.mid
@@ -199,7 +244,11 @@ export function mixPose(a: PoseSpec, b: PoseSpec, t: number): PoseSpec {
     twist: lerp(a.twist ?? 0, b.twist ?? 0, t),
     head: lerp(a.head ?? 0, b.head ?? 0, t),
     hands: sidesLerp(a.hands, b.hands, (x, y) => lerp3(x, y, t)),
-    feet: sidesLerp(a.feet, b.feet, (x, y) => ({ ankle: lerp3(x.ankle, y.ankle, t), toe: lerp3(x.toe, y.toe, t) })),
+    feet: sidesLerp(a.feet, b.feet, (x, y) => ({
+      ankle: lerp3(x.ankle, y.ankle, t),
+      toe: lerp3(x.toe, y.toe, t),
+      ...(x.sole || y.sole ? { sole: lerpPole(x.sole, y.sole, t) } : {}),
+    })),
     elbowPole: pole(a.elbowPole, b.elbowPole),
     kneePole: pole(a.kneePole, b.kneePole),
   }

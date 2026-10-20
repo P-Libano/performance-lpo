@@ -1,6 +1,7 @@
 import type { Skeleton } from './body'
 import type { MuscleId } from './muscles'
-import { EASE, mixPose, solve, type Ease, type PoseSpec } from './pose'
+import { EASE, mixPose, shouldersOf, solve, type Ease, type PoseSpec } from './pose'
+import { add, dot, len, mul, sub, unit } from './vec'
 import type { PropSpec } from './props'
 
 /**
@@ -20,6 +21,13 @@ export interface Keyframe {
   /** fase do movimento em que esta pose termina (um dos nomes de `phases`) */
   phase: string
   ease?: Ease
+  /**
+   * Caminho das mãos na transição até esta pose. 'linear' (padrão): reta no mundo — certo quando a mão segue
+   * um objeto (barra subindo na vertical). 'shoulder': arco em volta do ombro (direção e distância ao ombro
+   * interpoladas) — certo para balanço de braço livre (burpee, polichinelo, elevação), em que a reta faria a
+   * mão passar por dentro do ombro e o cotovelo fechar.
+   */
+  handPath?: 'linear' | 'shoulder'
 }
 
 export interface Check {
@@ -83,7 +91,9 @@ export function sampleAt(spec: Pick<ExerciseSpec, 'frames'>, ms: number): Sample
     const f = fr[i]
     if (t < f.moveMs) {
       const from = fr[(i - 1 + fr.length) % fr.length].pose
-      const pose = mixPose(from, f.pose, EASE[f.ease ?? 'inout'](t / f.moveMs))
+      const e = EASE[f.ease ?? 'inout'](t / f.moveMs)
+      const pose = mixPose(from, f.pose, e)
+      if (f.handPath === 'shoulder') pose.hands = handsOnArc(from, f.pose, pose, e)
       return { pose, skeleton: solve(pose), phase: f.phase, frame: i, holding: false }
     }
     t -= f.moveMs
@@ -92,6 +102,31 @@ export function sampleAt(spec: Pick<ExerciseSpec, 'frames'>, ms: number): Sample
   }
   const last = fr.length - 1
   return { pose: fr[last].pose, skeleton: solve(fr[last].pose), phase: fr[last].phase, frame: last, holding: true }
+}
+
+/** Mãos em arco em volta do ombro: direção (esférica) e distância ao ombro interpoladas. */
+function handsOnArc(a: PoseSpec, b: PoseSpec, mid: PoseSpec, t: number): PoseSpec['hands'] {
+  const sa = shouldersOf(a)
+  const sb = shouldersOf(b)
+  const sm = shouldersOf(mid)
+  const out = {} as PoseSpec['hands']
+  for (const k of ['L', 'R'] as const) {
+    const ra = sub(a.hands[k], sa[k])
+    const rb = sub(b.hands[k], sb[k])
+    const da = len(ra)
+    const db = len(rb)
+    const ua = unit(ra)
+    const ub = unit(rb)
+    // slerp da direção
+    const cos = Math.max(-1, Math.min(1, dot(ua, ub)))
+    const om = Math.acos(cos)
+    const dir =
+      om < 1e-4
+        ? ua
+        : add(mul(ua, Math.sin((1 - t) * om) / Math.sin(om)), mul(ub, Math.sin(t * om) / Math.sin(om)))
+    out[k] = add(sm[k], mul(unit(dir), da + (db - da) * t))
+  }
+  return out
 }
 
 /** Músculos da fase (para o destaque e o mapa muscular). */
