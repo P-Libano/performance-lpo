@@ -67,7 +67,8 @@ export const lib = {
   /** Ângulo interno do cotovelo dentro da faixa. `side` = só um lado. */
   elbow: (min: number, max: number, side?: Side): Check['test'] => (s) => {
     for (const k of side ? [side] : SIDES) {
-      const a = jointAngle(s.shoulder[k], s.elbow[k], s.hand[k])
+      // até o punho: com a palma apoiada a mão sai da linha do antebraço (nos outros casos dá o mesmo ângulo)
+      const a = jointAngle(s.shoulder[k], s.elbow[k], s.wrist[k])
       if (a < min || a > max) return `cotovelo (${k}) a ${Math.round(a)}° (esperado ${min}–${max}°)`
     }
     return true
@@ -179,7 +180,7 @@ export const lib = {
   /** Antebraços na vertical (cotovelo embaixo da mão), ± tol graus — supino, desenvolvimento. */
   forearmVertical: (tol = 15): Check['test'] => (s) => {
     for (const k of SIDES) {
-      const fore = [s.hand[k][0] - s.elbow[k][0], s.hand[k][1] - s.elbow[k][1], s.hand[k][2] - s.elbow[k][2]] as const
+      const fore = [s.wrist[k][0] - s.elbow[k][0], s.wrist[k][1] - s.elbow[k][1], s.wrist[k][2] - s.elbow[k][2]] as const
       const a = angle(fore, v(0, 1, 0))
       if (a > tol) return `antebraço (${k}) a ${Math.round(a)}° da vertical (máx. ${tol})`
     }
@@ -275,7 +276,7 @@ function generalFailures(s: Skeleton, props: PropSpec[], keyframe: boolean): str
     if (s.reachError.foot[k] > tol) out.push(`pé (${k}) não alcança o alvo (faltam ${fmt(s.reachError.foot[k])} cm)`)
     // limites humanos (ângulo interno: 180 = reto)
     const kneeA = jointAngle(s.hip[k], s.knee[k], s.ankle[k])
-    const elbowA = jointAngle(s.shoulder[k], s.elbow[k], s.hand[k])
+    const elbowA = jointAngle(s.shoulder[k], s.elbow[k], s.wrist[k])
     if (kneeA < 30) out.push(`joelho (${k}) fechado demais (${Math.round(kneeA)}°)`)
     if (elbowA < 25) out.push(`cotovelo (${k}) fechado demais (${Math.round(elbowA)}°)`)
     // quadril: ângulo tronco–coxa (180 = em pé); abaixo de ~25° o tronco "entra" na coxa

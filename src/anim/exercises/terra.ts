@@ -1,3 +1,4 @@
+import { STAND_Y } from '../body'
 import { lib } from '../checks'
 import { both, footFlat, hang, mirrorFoot, mirrorZ, type PoseSpec } from '../pose'
 import { DIM } from '../props'
@@ -9,14 +10,14 @@ import { v } from '../vec'
  * 1) ficha técnica (fases, pontos-chave, músculos com fonte); 2) poses-chave com contatos; 3) restrições.
  *
  * Medidas (cm, atleta de 175 cm): meio do pé em x ≈ 6,8 (tornozelo em x = 0); barra no chão com o centro a
- * 22,5 cm (raio da anilha de 45 cm); pegada logo por fora das pernas (z = ±25).
+ * 22,5 cm (raio da anilha de 45 cm); pegada logo por fora dos joelhos (z = ±30; os joelhos acompanham as pontas dos pés).
  * As mãos vêm de `hang()`: braços estendidos, barra sobre o meio do pé; a altura da barra é consequência do
  * quadril e do tronco (como no movimento real).
  */
 
-const GRIP_Z = 25
+const GRIP_Z = 30
 const BAR_X = 7 // sobre o meio do pé
-const feet = both(footFlat(0, 12, -8), mirrorFoot)
+const feet = both(footFlat(0, 11, -6), mirrorFoot)
 // cotovelos estendidos apontando para trás (braços "travados" ao lado do tronco)
 const elbowPole = both(v(-1, 0, 0.3), mirrorZ)
 
@@ -26,13 +27,13 @@ const pose = (pelvis: readonly [number, number, number], pitch: number, head: nu
 }
 
 /** Posição inicial: anilhas no chão, barra sobre o meio do pé, ombros um pouco à frente da barra, costas neutras. */
-const SETUP = pose(v(-28.8, 56.4, 0), 50, 10)
+const SETUP = pose(v(-30, 60, 0), 58, 10)
 /** Barra passando o joelho: o quadril sobe junto com os ombros (ângulo das costas quase igual). */
-const KNEE = pose(v(-25.6, 82.4, 0), 45, 8)
+const KNEE = pose(v(-25.6, STAND_Y - 10.4, 0), 45, 8)
 /** Barra no meio da coxa: o quadril vem à frente por baixo da barra, tronco mais vertical. */
-const MID_THIGH = pose(v(-12.3, 86.1, 0), 25, 4)
+const MID_THIGH = pose(v(-12.3, STAND_Y - 6.7, 0), 25, 4)
 /** Travamento: quadril e joelhos estendidos, tronco vertical, barra na coxa. */
-const LOCKOUT = pose(v(-2, 92.6, 0), 0, 0)
+const LOCKOUT = pose(v(-2, STAND_Y - 0.15, 0), 0, 0)
 
 export const terra: ExerciseSpec = {
   id: '0032',

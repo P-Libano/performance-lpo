@@ -1,5 +1,5 @@
 import type { Skeleton } from '../body'
-import { SIDES } from '../body'
+import { SEG, SIDES } from '../body'
 import { lib } from '../checks'
 import { jointAngle, type Foot, type PoseSpec } from '../pose'
 import { legPressPlatform, type PropSpec } from '../props'
@@ -35,7 +35,7 @@ const PLATE_UP = v(-Math.SQRT1_2, Math.SQRT1_2, 0)
 // pelve no canto: 11 cm acima do assento e 11 cm à frente do encosto
 const PELVIS = v(BACK.hingeX + (11 - 11 * Math.cos(r)) / Math.sin(r), SEAT_Y + 11, 0)
 const FOOT_Z = 14
-const ANKLE_H = 6.8 // = SEG.ankleHeight: tornozelo afastado da plataforma
+const ANKLE_H = SEG.ankleHeight // tornozelo afastado da plataforma
 
 /** Pé com a sola na plataforma, dedos para cima (no plano da plataforma), tornozelo a `d` cm da pelve ao longo do trilho. */
 const footAt = (d: number, z: number): Foot => {

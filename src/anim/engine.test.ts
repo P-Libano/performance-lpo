@@ -89,7 +89,8 @@ describe('joelho', () => {
     const s = solve(frame('Posição inicial'))
     for (const k of ['L', 'R'] as const) {
       const out = Math.abs(s.knee[k][2]) - Math.abs(s.ankle[k][2])
-      expect(out).toBeLessThan(8) // antes: ~20 cm para fora
+      // com a ponta do pé a 8° para fora e o joelho bem dobrado, ~9 cm é o acompanhamento normal; o bug abria ~20
+      expect(out).toBeLessThan(12)
     }
   })
 

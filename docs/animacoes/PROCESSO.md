@@ -66,6 +66,9 @@ qual dos dois é o certo. Não anime "o que deveria ser" nem "o que o GIF mostra
   pose mais representativa (fundo do agachamento, barra no peito).
 - `phase` de uma pose-chave = a fase que **termina** nela (a transição até ela pertence a essa fase).
 - Unidades em centímetros, atleta de 175 cm. Eixos: x para a frente do atleta, y para cima, z para a esquerda.
+- O atleta do motor tem **as medidas do corpo 3D que é desenhado** (MakeHuman; `SEG` em `src/anim/body.ts`).
+  Nunca escreva medida do corpo como número solto: use `SEG.*`, `ARM`, `LEG` e `STAND_Y` (pelve em pé, pernas
+  retas). Ex.: pelve em pé = `STAND_Y - 0.25`. Assim uma troca de corpo não quebra os exercícios.
 - Sentado ou deitado: a pelve fica **~11 cm acima da superfície** de apoio (espessura do glúteo).
 
 #### Helpers (use antes de calcular à mão)
@@ -81,6 +84,8 @@ qual dos dois é o certo. Não anime "o que deveria ser" nem "o que o GIF mostra
 | `footFlat`, `footOnToes`, `footFree` | pé no chão, na ponta, no ar |
 | `{ ankle, toe, sole }` | pé apoiado numa superfície inclinada (plataforma do leg press): `sole` = direção para onde a sola aponta |
 | `elbowPole`, `kneePole` | para onde aponta o cotovelo/joelho quando a IK tem duas soluções |
+| `palms: { L: 1, R: 1 }` (na pose) | palma apoiada no chão (burpee, flexão): `hands` = ponto do chão sob o centro da palma; o punho dobra e o braço alcança o punho. Ombro na prancha alta: use `ARM.a + SEG.forearm` até o punho, não `ARM.a + ARM.b` |
+| `SEG.forearmRest` | antebraço deitado no chão (prancha nos antebraços): altura do centro do cotovelo e do punho |
 | `handPath: 'shoulder'` (no keyframe) | mão em arco em volta do ombro (balanço livre: burpee, polichinelo, elevação lateral). Padrão `'linear'` = reta, certo quando a mão segue um objeto |
 
 #### Unilaterais e alternados
@@ -196,6 +201,8 @@ conferido e com qual câmera. A folha também tem a "vista oposta (costas)", que
 | Restrição aplicada à pose errada | Dê `name` à pose e use `at: { pose: 'Nome' }` em vez de `at: { phase }` |
 | Pose do meio sem pausa (miniatura borrada) | `holdMs > 0` na pose do meio |
 | Canela/coxa atravessando o banco | A verificação geral acusa; ajuste a pelve ou os pés |
+| Braço livre atravessando as pernas (ex.: das laterais ao chão no burpee) | Pose intermediária com as mãos à frente dos joelhos |
+| Apoio que afunda na transição entre duas poses distantes (prancha lateral → frontal) | Volte pela mesma pose intermediária da ida |
 | Teste verde mas visual errado | Sempre gere e olhe a folha de contato; se faltar uma restrição que pegaria o erro, peça-a |
 | Sinal invertido (giro, lado) | Escreva um teste do caso simples (ex.: "em pé, twist +90 vira o peito para a esquerda") |
 

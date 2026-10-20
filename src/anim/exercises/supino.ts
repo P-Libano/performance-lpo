@@ -12,7 +12,7 @@ import { v } from '../vec'
 
 const BENCH_TOP = DIM.bench.height
 const BODY_Y = BENCH_TOP + 11
-const GRIP_Z = 40
+const GRIP_Z = 38
 const body = {
   pelvis: v(10, BODY_Y, 0),
   pitch: -90,

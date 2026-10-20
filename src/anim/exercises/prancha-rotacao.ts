@@ -9,7 +9,7 @@ import { add, angle, lerp3, mul, sub, unit, v, type V3 } from '../vec'
  * com o braço de cima estendido para o teto, e volta. Alterna os lados.
  *
  * Construção (cm, atleta de 175 cm):
- * - O antebraço de apoio fica PARADO no chão: cotovelo em (0, 4, ∓17,5), mão 34,3 cm à frente. O ombro de apoio
+ * - O antebraço de apoio fica PARADO no chão: cotovelo em (0, SEG.forearmRest, ∓SEG.shoulderHalf), mão ARM.b à frente. O ombro de apoio
  *   fica exatamente sobre o cotovelo (braço vertical, 90° no cotovelo) em todas as poses-chave; a pelve é
  *   deduzida dele (ombro → peito → pelve pelo referencial do tronco).
  * - A inclinação do tronco (pitch) sai de uma busca: corpo reto do ombro ao tornozelo de apoio, com a ponta do pé
@@ -22,8 +22,8 @@ import { add, angle, lerp3, mul, sub, unit, v, type V3 } from '../vec'
 
 const L = 0.995 * (LEG.a + LEG.b) // perna quase estendida (joelho ≈ 170°+)
 const REACH = 0.996 * (ARM.a + ARM.b) // braço estendido (≈ 172°)
-const ELBOW_Y = 4 // centro do cotovelo apoiado (espessura do antebraço)
-const FOREARM_Y = 4
+const ELBOW_Y = SEG.forearmRest // centro do cotovelo apoiado (espessura do antebraço)
+const FOREARM_Y = SEG.forearmRest
 const TOE_Y = 1
 const SR: V3 = v(0, ELBOW_Y + ARM.a, -SEG.shoulderHalf) // ombro direito (apoio) sobre o cotovelo
 const HAND_R: V3 = v(ARM.b, FOREARM_Y, -SEG.shoulderHalf)
@@ -106,7 +106,7 @@ const MID_R = mirrorPose(MID_L)
 const SIDE_R = mirrorPose(SIDE_L)
 
 // ───────── restrições próprias ─────────
-const FLOOR_TOL = 6
+const FLOOR_TOL = SEG.forearmRest + 2
 const onFloor = (s: Skeleton, k: Side) => s.elbow[k][1] <= FLOOR_TOL && s.hand[k][1] <= FLOOR_TOL
 const mid = (a: V3, b: V3) => lerp3(a, b, 0.5)
 /** Lado de apoio numa prancha lateral: o cotovelo mais baixo. */
@@ -164,12 +164,15 @@ export const pranchaRotacao: ExerciseSpec = {
     'McGill — Low Back Disorders, 3ª ed. (Human Kinetics, 2016), prancha frontal e ponte lateral; Delavier — Guia dos Movimentos de Musculação (Manole), prancha; dataset 0464 (alvo: abdômen; secundários: oblíquos, ombros). Distribuição por fase a validar na revisão.',
   props: [{ kind: 'mat', x0: -165, x1: 50 }], // tornozelos em x ≈ −135, mãos em x ≈ 34
   frames: [
-    { name: 'Prancha', pose: FRONT, moveMs: 700, holdMs: 600, phase: 'Retorno', ease: 'inout' },
+    { name: 'Prancha', pose: FRONT, moveMs: 350, holdMs: 600, phase: 'Retorno', ease: 'out' },
     { name: 'Girando (esquerda)', pose: MID_L, moveMs: 450, holdMs: 0, phase: 'Rotação', ease: 'in' },
     { name: 'Prancha lateral (esquerda)', pose: SIDE_L, moveMs: 450, holdMs: 700, phase: 'Rotação', ease: 'out' },
-    { name: 'Prancha', pose: FRONT, moveMs: 700, holdMs: 600, phase: 'Retorno', ease: 'inout' },
+    // volta pela mesma pose do meio: direto da lateral para a frontal, a interpolação abaixava o ombro de apoio
+    { pose: MID_L, moveMs: 350, holdMs: 0, phase: 'Retorno', ease: 'in' },
+    { name: 'Prancha', pose: FRONT, moveMs: 350, holdMs: 600, phase: 'Retorno', ease: 'out' },
     { name: 'Girando (direita)', pose: MID_R, moveMs: 450, holdMs: 0, phase: 'Rotação', ease: 'in' },
     { name: 'Prancha lateral (direita)', pose: SIDE_R, moveMs: 450, holdMs: 700, phase: 'Rotação', ease: 'out' },
+    { pose: MID_R, moveMs: 350, holdMs: 0, phase: 'Retorno', ease: 'in' },
   ],
   checks: [
     {

@@ -1,4 +1,4 @@
-import { ARM, type Skeleton } from '../body'
+import { ARM, STAND_Y, type Skeleton } from '../body'
 import { lib } from '../checks'
 import { both, footFlat, mirrorFoot, mirrorZ, solve, type PoseSpec } from '../pose'
 import type { ExerciseSpec } from '../spec'
@@ -7,7 +7,7 @@ import { add, angle, mul, sub, unit, v, type V3 } from '../vec'
 /*
  * Elevação lateral com halteres, em pé, pegada neutra embaixo (halteres no eixo x: palmas para o corpo) e
  * palmas para baixo no topo (o eixo do halter continua em x).
- * Em pé: pelve a 92,5 cm, tronco vertical, pés na largura do quadril.
+ * Em pé: pelve 0,25 cm abaixo da altura em pé (STAND_Y), tronco vertical, pés na largura do quadril.
  * O braço sobe de lado (um pouco à frente, ~10°, no plano da escápula) com o cotovelo levemente dobrado e
  * fixo (~165°). A mão é posta na distância ombro–mão que dá esse ângulo; a cinemática inversa põe o cotovelo
  * para trás e, conforme o braço sobe, para cima (guia do cotovelo acompanha a elevação): no topo o cotovelo
@@ -16,7 +16,7 @@ import { add, angle, mul, sub, unit, v, type V3 } from '../vec'
  */
 
 const feet = both(footFlat(0, 12, -8), mirrorFoot)
-const base = { pelvis: v(0, 92.5, 0), pitch: 0, head: 0, feet }
+const base = { pelvis: v(0, STAND_Y - 0.25, 0), pitch: 0, head: 0, feet }
 const SHOULDER = solve({ ...base, hands: { L: base.pelvis, R: base.pelvis } } as PoseSpec).shoulder.L
 const ELBOW_DEG = 165
 const D = Math.sqrt(ARM.a ** 2 + ARM.b ** 2 - 2 * ARM.a * ARM.b * Math.cos((ELBOW_DEG * Math.PI) / 180))

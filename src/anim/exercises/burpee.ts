@@ -1,6 +1,6 @@
 import { lib } from '../checks'
-import { ARM, LEG, SEG, SIDES, type Skeleton } from '../body'
-import { armsAtSides, both, footFlat, footFree, hang, jointAngle, mirrorFoot, mirrorZ, pressUp, trunkFrame, type Foot, type PoseSpec } from '../pose'
+import { ARM, LEG, SEG, SIDES, STAND_Y, type Skeleton } from '../body'
+import { armsAtSides, both, footFlat, footFree, jointAngle, mirrorFoot, mirrorZ, pressUp, trunkFrame, type Foot, type PoseSpec } from '../pose'
 import type { ExerciseSpec } from '../spec'
 import { add, angle, dist, lerp3, mul, sub, unit, v, type V3 } from '../vec'
 
@@ -8,23 +8,25 @@ import { add, angle, dist, lerp3, mul, sub, unit, v, type V3 } from '../vec'
  * Burpee (sem flexão, como o GIF do dataset 1160): em pé → agacha e apoia as mãos no chão → lança os pés para
  * trás até a prancha alta → traz os pés de volta → salta com os braços acima da cabeça → aterrissa em pé.
  *
- * Medidas (cm, atleta de 175 cm): tornozelos em x = 0 em pé; mãos no chão em x = 38, z = ±20 (centro da mão
- * 2,5 cm acima do chão), as MESMAS nos dois agachamentos e na prancha (mãos não deslizam).
- * Prancha alta: ombros na vertical das mãos com os braços estendidos (hang); a inclinação do tronco sai de uma
+ * Medidas (cm, atleta de 175 cm): tornozelos em x = 0 em pé; palmas apoiadas no chão (`palms`, punho dobrado)
+ * em x = 38, z = ±22, as MESMAS nos dois agachamentos e na prancha (mãos não deslizam).
+ * Prancha alta: braços estendidos com os ombros entre o punho e o centro da palma; a inclinação do tronco sai de uma
  * busca para o corpo ficar reto até as pontas dos pés no chão. Salto: pés ≈ 7 cm acima do chão (pé "solto").
  */
 
 const L = 0.995 * (LEG.a + LEG.b) // perna quase estendida
 const REACH = 0.996 * (ARM.a + ARM.b)
+/** ombro → punho com o braço estendido (palma apoiada: a mão não está em linha com o antebraço) */
+const REACH_WRIST = 0.996 * (ARM.a + SEG.forearm)
 const HX = 38
-const HZ = 20
-const HAND_Y = 2.5
+const HZ = 22
+const PALMS = { L: 1, R: 1 }
 const TOE_Y = 1
 const STANCE = both(footFlat(0, 12, -8), mirrorFoot)
 const kneeOut = both(v(1, 0, 0.45), mirrorZ) // joelhos na direção das pontas dos pés (não para dentro)
 
 // ───────── prancha alta ─────────
-const CHEST_PLANK = v(HX, HAND_Y + Math.sqrt(REACH * REACH - (HZ - SEG.shoulderHalf) ** 2), 0)
+const CHEST_PLANK = v(HX - SEG.palmBack / 2, SEG.palmHalf + Math.sqrt(REACH_WRIST * REACH_WRIST - (SEG.palmBack / 2) ** 2 - (HZ - SEG.shoulderHalf) ** 2), 0)
 type Frame = ReturnType<typeof trunkFrame>
 const toeDir = (f: Frame): V3 => unit(add(add(f.front, mul(f.up, 0.25)), v(0, -0.5, 0)))
 const ankleYFor = (f: Frame) => TOE_Y - SEG.toe * toeDir(f)[1]
@@ -53,9 +55,11 @@ const plankFeet = (): Record<'L' | 'R', Foot> => {
   return { L: foot(1), R: foot(-1) }
 }
 const plankBase = { pelvis: sub(CHEST_PLANK, mul(trunkFrame(PLANK_PITCH).up, SEG.trunk)), pitch: PLANK_PITCH, head: -10, feet: plankFeet() }
+/** Pontos do chão sob o centro das palmas (os mesmos do agachamento à prancha) e o centro das palmas. */
+const HANDS = both(v(HX, 0, HZ), mirrorZ)
+const PALM_C = both(v(HX, SEG.palmHalf, HZ), mirrorZ)
 /** Prancha alta: braços estendidos com os ombros sobre as mãos, corpo reto, pontas dos pés no chão. */
-const PLANK: PoseSpec = { ...plankBase, hands: hang(plankBase, HX, HZ), elbowPole: both(v(-1, 0, 0.3), mirrorZ) }
-const HANDS = PLANK.hands
+const PLANK: PoseSpec = { ...plankBase, hands: HANDS, palms: PALMS, elbowPole: both(v(-1, 0, 0.3), mirrorZ) }
 
 /*
  * Braço livre (sem segurar nada): as transições em que a mão sai do chão ou vai para o alto usam
@@ -66,22 +70,27 @@ const HANDS = PLANK.hands
 const shoulderL = (pelvis: V3, pitch: number) => add(add(pelvis, mul(trunkFrame(pitch).up, SEG.trunk)), v(0, 0, SEG.shoulderHalf))
 
 /** Aterrissagem / em pé: tronco ereto, joelhos destravados, braços ao lado do corpo. */
-const LAND_BASE = { pelvis: v(-4, 89.5, 0), pitch: 6, head: 0, feet: STANCE, kneePole: kneeOut }
-const LAND: PoseSpec = { ...LAND_BASE, hands: armsAtSides(LAND_BASE, 6, 4) }
+const LAND_BASE = { pelvis: v(-4, STAND_Y - 3.25, 0), pitch: 6, head: 0, feet: STANCE, kneePole: kneeOut }
+const LAND: PoseSpec = { ...LAND_BASE, hands: armsAtSides(LAND_BASE, 9, 4) }
+
+/** Descendo: quadril para trás e para baixo, braços indo à frente dos joelhos (não passam por dentro das pernas). */
+const DESC_BASE = { pelvis: v(-12, STAND_Y - 22, 0), pitch: 40, head: -15, feet: STANCE, kneePole: kneeOut }
+const DESC: PoseSpec = { ...DESC_BASE, hands: both(add(shoulderL(DESC_BASE.pelvis, 40), mul(unit(v(0.8, -0.6, 0)), REACH)), mirrorZ) }
 
 /** Subindo do agachamento: quadril e joelhos estendendo, braços passando à frente rumo ao alto. */
-const RISE_BASE = { pelvis: v(-8, 78, 0), pitch: 20, head: -5, feet: STANCE, kneePole: kneeOut }
+const RISE_BASE = { pelvis: v(-8, STAND_Y - 14.75, 0), pitch: 20, head: -5, feet: STANCE, kneePole: kneeOut }
 const RISE: PoseSpec = { ...RISE_BASE, hands: both(add(shoulderL(RISE_BASE.pelvis, 20), mul(unit(v(0.85, 0.45, 0.1)), REACH)), mirrorZ) }
 
 /** Agachado com as mãos no chão à frente dos pés: quadril baixo, calcanhares no chão, olhar à frente. */
-const SQUAT: PoseSpec = { pelvis: v(-18, 45, 0), pitch: 65, head: -25, feet: STANCE, kneePole: kneeOut, hands: HANDS, elbowPole: both(v(-1, 0, 0.5), mirrorZ) }
+const SQUAT: PoseSpec = { pelvis: v(-12, 42, 0), pitch: 75, head: -25, feet: STANCE, kneePole: kneeOut, hands: HANDS, palms: PALMS, elbowPole: both(v(-1, 0, 0.5), mirrorZ) }
 
 /** No ar: corpo estendido, braços acima da cabeça, pés fora do chão. */
+const AIR_Y = STAND_Y + 15.25
 const AIR_BASE = {
-  pelvis: v(-2, 108, 0),
+  pelvis: v(-2, AIR_Y, 0),
   pitch: 0,
   head: 0,
-  feet: both(footFree(v(-2, 108 - Math.sqrt(L * L - (12 - SEG.hipHalf) ** 2), 12), v(1, -1.3, 0)), mirrorFoot),
+  feet: both(footFree(v(-2, AIR_Y - Math.sqrt(L * L - (12 - SEG.hipHalf) ** 2), 12), v(1, -1.3, 0)), mirrorFoot),
   kneePole: kneeOut,
 }
 // braços acima da cabeça, um pouco abertos (mãos a z = ±24); subida e descida em arco (handPath 'shoulder')
@@ -128,12 +137,13 @@ export const burpee: ExerciseSpec = {
   frames: [
     // ordem girada para a prancha ser a pose do meio (frames[3]): é o quadro parado/miniatura do app
     // (AnimPlayer.stillMs) e a "vista oposta" da folha; precisa ter holdMs > 0 (render.test.ts)
-    { name: 'No ar', pose: AIR, moveMs: 250, holdMs: 100, phase: 'Salto', ease: 'out', handPath: 'shoulder' },
     { name: 'Aterrissagem (em pé)', pose: LAND, moveMs: 400, holdMs: 500, phase: 'Aterrissagem', ease: 'in', handPath: 'shoulder' },
-    { name: SQUATS[0], pose: SQUAT, moveMs: 650, holdMs: 100, phase: 'Descida', ease: 'inout', handPath: 'shoulder' },
+    { name: 'Descendo', pose: DESC, moveMs: 350, holdMs: 0, phase: 'Descida', ease: 'in', handPath: 'shoulder' },
+    { name: SQUATS[0], pose: SQUAT, moveMs: 350, holdMs: 100, phase: 'Descida', ease: 'out' },
     { name: 'Prancha', pose: PLANK, moveMs: 400, holdMs: 250, phase: 'Pés para trás', ease: 'out' },
     { name: SQUATS[1], pose: SQUAT, moveMs: 400, holdMs: 100, phase: 'Pés de volta', ease: 'out' },
     { name: 'Subindo', pose: RISE, moveMs: 300, holdMs: 0, phase: 'Salto', ease: 'in', handPath: 'shoulder' },
+    { name: 'No ar', pose: AIR, moveMs: 250, holdMs: 100, phase: 'Salto', ease: 'out', handPath: 'shoulder' },
   ],
   checks: [
     { name: 'Movimento simétrico', at: 'all', test: lib.symmetric(1) },
@@ -143,10 +153,10 @@ export const burpee: ExerciseSpec = {
     { name: 'Subindo: pés apoiados (empurra o chão)', at: { pose: 'Subindo' }, test: lib.feetFlat(0, 1.5) },
     ...SQUATS.flatMap((pose) => [
       { name: `${pose}: calcanhares no chão`, at: { pose }, test: lib.feetFlat(0, 1.5) },
-      { name: `${pose}: mãos no chão, no lugar da prancha`, at: { pose }, test: lib.handsAt(HANDS, 1) },
+      { name: `${pose}: mãos no chão, no lugar da prancha`, at: { pose }, test: lib.handsAt(PALM_C, 1) },
       { name: `${pose}: agachamento fundo`, at: { pose }, test: lib.knee(30, 100) },
     ]),
-    { name: 'Prancha: mãos no mesmo lugar', at: { pose: 'Prancha' }, test: lib.handsAt(HANDS, 1) },
+    { name: 'Prancha: mãos no mesmo lugar', at: { pose: 'Prancha' }, test: lib.handsAt(PALM_C, 1) },
     { name: 'Prancha: corpo reto', at: { pose: 'Prancha' }, test: bodyLine(168) },
     { name: 'Prancha: braços estendidos', at: { pose: 'Prancha' }, test: lib.elbow(165, 180) },
     {

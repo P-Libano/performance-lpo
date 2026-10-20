@@ -1,4 +1,4 @@
-import { ARM, SEG } from '../body'
+import { ARM, SEG, STAND_Y } from '../body'
 import { lib } from '../checks'
 import { both, footFlat, jointAngle, mirrorFoot, mirrorZ, solve, type PoseSpec } from '../pose'
 import type { ExerciseSpec } from '../spec'
@@ -6,7 +6,7 @@ import { add, angle, mul, reject, unit, v, type V3 } from '../vec'
 
 /*
  * Rosca com halteres (bíceps), em pé, pegada supinada (palmas para a frente: halteres no eixo z).
- * Em pé: pelve a 92,5 cm, tronco vertical, pés na largura do quadril (como o travamento do terra).
+ * Em pé: pelve 0,25 cm abaixo da altura em pé (STAND_Y), tronco vertical, pés na largura do quadril (como o travamento do terra).
  * O braço (ombro → cotovelo) fica parado, quase vertical e um pouco para fora; só o antebraço gira em torno
  * do cotovelo. As mãos são calculadas a partir do cotovelo e do ângulo dele (`hand(θ)`), então o comprimento
  * dos ossos é exato e a cinemática inversa devolve o mesmo cotovelo (guia do cotovelo para trás, −x).
@@ -14,7 +14,7 @@ import { add, angle, mul, reject, unit, v, type V3 } from '../vec'
  */
 
 const feet = both(footFlat(0, 12, -8), mirrorFoot)
-const base = { pelvis: v(0, 92.5, 0), pitch: 0, head: 0, feet }
+const base = { pelvis: v(0, STAND_Y - 0.25, 0), pitch: 0, head: 0, feet }
 const SHOULDER = solve({ ...base, hands: { L: base.pelvis, R: base.pelvis } } as PoseSpec).shoulder.L
 // braço parado: quase vertical, levemente para fora (o halter não bate na coxa) e um nada à frente
 const UPPER = unit(v(0.04, -1, 0.14))
@@ -37,7 +37,7 @@ const LOW = curl(130)
 /** Antebraço na horizontal. */
 const MID = curl(90)
 /** Topo: bíceps contraído, halteres perto da altura dos ombros. */
-const TOP = curl(42)
+const TOP = curl(50)
 
 export const roscaHalteres: ExerciseSpec = {
   id: '0294',

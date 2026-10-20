@@ -35,8 +35,13 @@ export interface PoseSpec {
   twist?: number
   /** Cabeça em relação ao tronco (graus; + = queixo para baixo). */
   head?: number
-  /** Centro de cada mão (pegada). */
+  /** Centro de cada mão (pegada). Com `palms`, o ponto da superfície sob o centro da palma. */
   hands: Record<Side, V3>
+  /**
+   * Palma apoiada (chão, banco): 1 = palma inteira na superfície com o punho dobrado (burpee, flexão);
+   * 0/ausente = mão em linha com o antebraço. Valores intermediários na transição.
+   */
+  palms?: Partial<Record<Side, number>>
   feet: Record<Side, Foot>
   /** Para onde aponta cada cotovelo/joelho (direção no mundo). Ausente = padrão anatômico. */
   elbowPole?: Partial<Record<Side, V3>>
@@ -83,6 +88,12 @@ export function ik2(root: V3, target: V3, a: number, b: number, pole: V3): { mid
   const tip = add(root, mul(dir, d))
   return { mid, tip, error }
 }
+
+// calcanhar no referencial do pé (eixo tornozelo → ponta e a perpendicular para a sola): com o pé apoiado,
+// cai no chão SEG.heel atrás do tornozelo
+const FOOT_LEN = Math.hypot(SEG.toe, SEG.ankleHeight)
+const HEEL_DOWN = (SEG.ankleHeight * (SEG.heel + SEG.toe)) / FOOT_LEN
+const HEEL_FWD = (SEG.ankleHeight ** 2 - SEG.heel * SEG.toe) / FOOT_LEN
 
 /** Pé apoiado no chão: tornozelo na altura dele, ponta à frente (direção `heading` em graus, 0 = +x). */
 export function footFlat(x: number, z: number, heading = 0, floorY = 0): Foot {
@@ -178,8 +189,9 @@ export function solve(p: PoseSpec): Skeleton {
   const headDir = rotate(up, left, -(p.head ?? 0)) // + = queixo para baixo (cabeça gira para a frente)
   const head = add(neck, mul(headDir, SEG.head))
 
-  const out = {} as Omit<Skeleton, 'pelvis' | 'chest' | 'neck' | 'head' | 'up' | 'front' | 'left' | 'reachError'>
+  const out = {} as Omit<Skeleton, 'pelvis' | 'chest' | 'neck' | 'head' | 'up' | 'front' | 'left' | 'palm' | 'reachError'>
   const reachError = { hand: { L: 0, R: 0 }, foot: { L: 0, R: 0 } }
+  const palm = { L: 0, R: 0 }
   for (const key of ['hip', 'knee', 'ankle', 'heel', 'toe', 'shoulder', 'elbow', 'wrist', 'hand'] as const) out[key] = {} as Record<Side, V3>
 
   for (const s of SIDES) {
@@ -200,7 +212,7 @@ export function solve(p: PoseSpec): Skeleton {
     let down = foot.sole ? reject(foot.sole, fwd) : reject(v(0, -1, 0), fwd)
     if (len(down) < 1e-3) down = reject(mul(front, -1), fwd)
     if (!foot.sole && dot(down, sub(ankle, legIk.mid)) < 0) down = mul(down, -1)
-    const heel = add(add(ankle, mul(unit(down), 8.5)), mul(fwd, -4))
+    const heel = add(add(ankle, mul(unit(down), HEEL_DOWN)), mul(fwd, HEEL_FWD))
     out.hip[s] = hip
     out.knee[s] = legIk.mid
     out.ankle[s] = ankle
@@ -214,12 +226,29 @@ export function solve(p: PoseSpec): Skeleton {
     const armIk = ik2(shoulder, p.hands[s], ARM.a, ARM.b, elbowPole)
     const toHand = unit(sub(armIk.tip, armIk.mid))
     out.shoulder[s] = shoulder
-    out.elbow[s] = armIk.mid
-    out.wrist[s] = add(armIk.mid, mul(toHand, SEG.forearm))
-    out.hand[s] = armIk.tip
-    reachError.hand[s] = armIk.error
+    const w = Math.min(1, Math.max(0, p.palms?.[s] ?? 0))
+    palm[s] = w
+    if (w === 0) {
+      out.elbow[s] = armIk.mid
+      out.wrist[s] = add(armIk.mid, mul(toHand, SEG.forearm))
+      out.hand[s] = armIk.tip
+      reachError.hand[s] = armIk.error
+    } else {
+      // palma apoiada: centro da palma sobre o ponto pedido, dedos para a frente do corpo (no plano do chão),
+      // punho atrás dele; o braço (ombro → cotovelo → punho) alcança o punho
+      const fwdH = reject(front, v(0, 1, 0))
+      const fingers = unit(len(fwdH) >= 0.5 ? fwdH : reject(up, v(0, 1, 0)))
+      const palmC = add(p.hands[s], v(0, SEG.palmHalf, 0))
+      const wristFlat = sub(palmC, mul(fingers, SEG.palmBack))
+      const wristLine = add(armIk.mid, mul(toHand, SEG.forearm))
+      const wristIk = ik2(shoulder, lerp3(wristLine, wristFlat, w), ARM.a, SEG.forearm, elbowPole)
+      out.elbow[s] = wristIk.mid
+      out.wrist[s] = wristIk.tip
+      out.hand[s] = lerp3(armIk.tip, palmC, w)
+      reachError.hand[s] = wristIk.error + (1 - w) * armIk.error
+    }
   }
-  return { pelvis, chest, neck, head, up, front, left, ...out, reachError }
+  return { pelvis, chest, neck, head, up, front, left, ...out, palm, reachError }
 }
 
 // ───────── interpolação ─────────
@@ -247,6 +276,7 @@ export function mixPose(a: PoseSpec, b: PoseSpec, t: number): PoseSpec {
     twist: lerp(a.twist ?? 0, b.twist ?? 0, t),
     head: lerp(a.head ?? 0, b.head ?? 0, t),
     hands: sidesLerp(a.hands, b.hands, (x, y) => lerp3(x, y, t)),
+    ...(a.palms || b.palms ? { palms: { L: lerp(a.palms?.L ?? 0, b.palms?.L ?? 0, t), R: lerp(a.palms?.R ?? 0, b.palms?.R ?? 0, t) } } : {}),
     feet: sidesLerp(a.feet, b.feet, (x, y) => ({
       ankle: lerp3(x.ankle, y.ankle, t),
       toe: lerp3(x.toe, y.toe, t),

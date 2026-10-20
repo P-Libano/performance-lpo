@@ -131,7 +131,9 @@ export const puxada: ExerciseSpec = {
         for (const k of ['L', 'R'] as const) {
           const below = s.hand[k][1] - s.elbow[k][1]
           const out = Math.abs(s.elbow[k][2]) - Math.abs(s.shoulder[k][2])
-          if (below < 12 || out < 3) return `cotovelo (${k}) ${below.toFixed(1)} cm abaixo da mão e ${out.toFixed(1)} cm por fora do ombro`
+          // braço (25,8 cm) mais curto que antebraço + mão (35,6 cm) no atleta MakeHuman: com a barra no peito
+          // o cotovelo fica ~7 cm abaixo da mão (no atleta antigo, ~12)
+          if (below < 5 || out < 3) return `cotovelo (${k}) ${below.toFixed(1)} cm abaixo da mão e ${out.toFixed(1)} cm por fora do ombro`
         }
         return true
       },

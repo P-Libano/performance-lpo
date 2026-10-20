@@ -44,9 +44,9 @@ const pose = (pelvis: V3, pitch: number): PoseSpec => {
 }
 
 /** Em cima: perna da frente quase estendida, tronco quase vertical. */
-const TOP = pose(v(-18, 90, 0), 5)
+const TOP = pose(v(-18, 92.4, 0), 5)
 /** Embaixo: coxa da frente perto da horizontal, joelho de trás perto do chão, tronco levemente à frente. */
-const BOTTOM = pose(v(-30, 54, 0), 12)
+const BOTTOM = pose(v(-30, 56, 0), 12)
 
 const props: PropSpec[] = [{ kind: 'bench', x0: BENCH.x0, x1: BENCH.x1 }, { kind: 'dumbbells', axis: 'x' }]
 
