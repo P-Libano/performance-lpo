@@ -103,7 +103,7 @@ qual dos dois é o certo. Não anime "o que deveria ser" nem "o que o GIF mostra
 | `barOverMidfoot(tol)` | barra sobre o meio do pé |
 | `handsLevel`, `symmetric` | mãos niveladas; pose simétrica |
 | `feetFlat(floor, tol, side?)` | calcanhar e ponta no chão |
-| `soleOn(ponto, normal, tol, side?)` | sola apoiada numa superfície qualquer (plataforma, banco) |
+| `soleOn(ponto, normal, tol, side?)` | sola apoiada numa superfície fixa (banco, caixa). Superfície que se move (plataforma do leg press): calcule o plano no quadro — `test: (s) => { const { face, rail } = legPressPlatform(prop, s); return lib.soleOn(face, rail, 1)(s) }` (`legPressPlatform` é exportado por `props.ts`) |
 | `feetOffFloor(min)` | pés no ar (salto, pendurado) |
 | `knee(min, max, side?)`, `elbow(min, max, side?)`, `hipAngle(min, max, side?)` | ângulos internos (180 = reto) |
 | `kneeTracksFoot(tol, side?)` | joelho na direção da ponta do pé |
@@ -162,8 +162,8 @@ volte o status para `verificado` (o GIF do dataset reaparece).
 3. Preencha a ficha técnica **antes** das poses.
 4. Escreva as poses-chave (etapa 2), dando `name` às poses que terão restrições próprias.
 5. Declare as restrições (etapa 3) e rode só o seu exercício:
-   `npx vitest run src/anim -t "<nome do exercício>"`.
-   Confira que aparece **`animação: <nome>`** na saída (se não aparecer, o arquivo não foi cadastrado:
+   `npx vitest run src/anim -t "<nome do exercício>" --reporter verbose`.
+   Confira que aparece **`animação: <nome>`** na saída (só aparece com `--reporter verbose`) (se não aparecer, o arquivo não foi cadastrado:
    falta o `export default`). Falhas de outros exercícios não bloqueiam o seu.
 6. Gere a folha de contato: `npm run anim:sheet -- <id>` (use `--zoom 2` para ver mãos, pés e contatos) e
    **olhe a imagem** comparando com o GIF do dataset. A folha é onde aparecem pose estranha, câmera ruim e
@@ -178,6 +178,11 @@ ponto técnico** (ex.: supino visto do lado dos pés e de cima, para ver a barra
 perfil, para a plataforma não tapar as pernas). Convenção em `spec.ts` (`yaw` 0 = de frente, 90 = perfil
 esquerdo, 180 = de costas). Sem motivo, fique no padrão `{ yaw: 52, pitch: 12 }`.
 
+Se a câmera certa para o movimento esconde um detalhe (ex.: pés atrás da plataforma do leg press), pode
+trocá-la **temporariamente** só para conferir o detalhe na folha, desde que: (1) o detalhe também tenha uma
+restrição que o verifique, (2) a câmera final volte à escolhida, e (3) `review.notes` registre o que foi
+conferido e com qual câmera. A folha também tem a "vista oposta (costas)", que muitas vezes já mostra o detalhe.
+
 ### Erros comuns (e a ferramenta que evita)
 
 | Erro | Como evitar |
@@ -185,7 +190,9 @@ esquerdo, 180 = de costas). Sem motivo, fique no padrão `{ yaw: 52, pitch: 12 }
 | Braço "quase reto" (164° em vez de 172°) | `hang()`, `pressUp()` ou `armsAtSides()`: calculam a distância exata |
 | Mão "solta" da barra entre duas poses (verificação de alcance) | A interpolação é em linha reta; acrescente uma pose intermediária no ponto do caminho que curva (ex.: barra no meio da coxa no terra) |
 | Braço livre "dobra" ou abre de lado no meio do balanço | `handPath: 'shoulder'` no keyframe de destino |
-| Calcanhar para cima numa plataforma inclinada | Pé com `sole` (direção da sola) |
+| Calcanhar para cima numa plataforma inclinada | Pé com `sole` (direção para onde a sola aponta: para a plataforma) |
+| Peito do pé apoiado atrás (búlgaro, dorso no banco) | Pé com `sole: v(0, 1, 0)` (sola para cima, calcanhar no ar) |
+| Arquivo .ts com BOM (PowerShell 5.1 `Set-Content`/`Out-File`) | Edite com o editor/ferramenta de arquivo, não com PowerShell; se usar, `[IO.File]::WriteAllText` (UTF-8 sem BOM) |
 | Restrição aplicada à pose errada | Dê `name` à pose e use `at: { pose: 'Nome' }` em vez de `at: { phase }` |
 | Pose do meio sem pausa (miniatura borrada) | `holdMs > 0` na pose do meio |
 | Canela/coxa atravessando o banco | A verificação geral acusa; ajuste a pelve ou os pés |

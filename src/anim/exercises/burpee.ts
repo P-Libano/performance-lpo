@@ -1,6 +1,6 @@
 import { lib } from '../checks'
 import { ARM, LEG, SEG, SIDES, type Skeleton } from '../body'
-import { both, footFlat, footFree, hang, jointAngle, mirrorFoot, mirrorZ, pressUp, trunkFrame, type Foot, type PoseSpec } from '../pose'
+import { armsAtSides, both, footFlat, footFree, hang, jointAngle, mirrorFoot, mirrorZ, pressUp, trunkFrame, type Foot, type PoseSpec } from '../pose'
 import type { ExerciseSpec } from '../spec'
 import { add, angle, dist, lerp3, mul, sub, unit, v, type V3 } from '../vec'
 
@@ -58,16 +58,16 @@ const PLANK: PoseSpec = { ...plankBase, hands: hang(plankBase, HX, HZ), elbowPol
 const HANDS = PLANK.hands
 
 /*
- * A interpolação das mãos é em linha reta no mundo: um braço que passa de "acima da cabeça" para "embaixo"
- * (ou o contrário) atravessa o ombro e fecha o cotovelo. Por isso os braços sobem pela frente (pose "Subindo")
- * e descem pelos lados (abertos na aterrissagem), e com o limite de 6 poses a aterrissagem faz o papel do
- * "em pé" (ver relatório do piloto).
+ * Braço livre (sem segurar nada): as transições em que a mão sai do chão ou vai para o alto usam
+ * handPath: 'shoulder' (arco em volta do ombro), senão a reta no mundo faria a mão passar por dentro do ombro.
+ * Com isso os braços descem junto ao corpo na aterrissagem, como no GIF. Com o limite de 6 poses, a
+ * aterrissagem faz o papel do "em pé".
  */
 const shoulderL = (pelvis: V3, pitch: number) => add(add(pelvis, mul(trunkFrame(pitch).up, SEG.trunk)), v(0, 0, SEG.shoulderHalf))
 
-/** Aterrissagem / em pé: tronco ereto, joelhos destravados, braços descendo pelos lados. */
+/** Aterrissagem / em pé: tronco ereto, joelhos destravados, braços ao lado do corpo. */
 const LAND_BASE = { pelvis: v(-4, 89.5, 0), pitch: 6, head: 0, feet: STANCE, kneePole: kneeOut }
-const LAND: PoseSpec = { ...LAND_BASE, hands: both(add(shoulderL(LAND_BASE.pelvis, 6), mul(unit(v(0.3, -0.75, 0.6)), REACH)), mirrorZ) }
+const LAND: PoseSpec = { ...LAND_BASE, hands: armsAtSides(LAND_BASE, 6, 4) }
 
 /** Subindo do agachamento: quadril e joelhos estendendo, braços passando à frente rumo ao alto. */
 const RISE_BASE = { pelvis: v(-8, 78, 0), pitch: 20, head: -5, feet: STANCE, kneePole: kneeOut }
@@ -84,8 +84,8 @@ const AIR_BASE = {
   feet: both(footFree(v(-2, 108 - Math.sqrt(L * L - (12 - SEG.hipHalf) ** 2), 12), v(1, -1.3, 0)), mirrorFoot),
   kneePole: kneeOut,
 }
-// braços em "V" (mãos a z = ±34): na descida pelos lados a mão passa longe do ombro
-const AIR: PoseSpec = { ...AIR_BASE, hands: pressUp(AIR_BASE, 4, 34) }
+// braços acima da cabeça, um pouco abertos (mãos a z = ±24); subida e descida em arco (handPath 'shoulder')
+const AIR: PoseSpec = { ...AIR_BASE, hands: pressUp(AIR_BASE, 4, 24) }
 
 // ───────── restrições próprias ─────────
 const mid = (a: V3, b: V3) => lerp3(a, b, 0.5)
@@ -128,12 +128,12 @@ export const burpee: ExerciseSpec = {
   frames: [
     // ordem girada para a prancha ser a pose do meio (frames[3]): é o quadro parado/miniatura do app
     // (AnimPlayer.stillMs) e a "vista oposta" da folha; precisa ter holdMs > 0 (render.test.ts)
-    { name: 'No ar', pose: AIR, moveMs: 250, holdMs: 100, phase: 'Salto', ease: 'out' },
-    { name: 'Aterrissagem (em pé)', pose: LAND, moveMs: 400, holdMs: 500, phase: 'Aterrissagem', ease: 'in' },
-    { name: SQUATS[0], pose: SQUAT, moveMs: 650, holdMs: 100, phase: 'Descida', ease: 'inout' },
+    { name: 'No ar', pose: AIR, moveMs: 250, holdMs: 100, phase: 'Salto', ease: 'out', handPath: 'shoulder' },
+    { name: 'Aterrissagem (em pé)', pose: LAND, moveMs: 400, holdMs: 500, phase: 'Aterrissagem', ease: 'in', handPath: 'shoulder' },
+    { name: SQUATS[0], pose: SQUAT, moveMs: 650, holdMs: 100, phase: 'Descida', ease: 'inout', handPath: 'shoulder' },
     { name: 'Prancha', pose: PLANK, moveMs: 400, holdMs: 250, phase: 'Pés para trás', ease: 'out' },
     { name: SQUATS[1], pose: SQUAT, moveMs: 400, holdMs: 100, phase: 'Pés de volta', ease: 'out' },
-    { name: 'Subindo', pose: RISE, moveMs: 300, holdMs: 0, phase: 'Salto', ease: 'in' },
+    { name: 'Subindo', pose: RISE, moveMs: 300, holdMs: 0, phase: 'Salto', ease: 'in', handPath: 'shoulder' },
   ],
   checks: [
     { name: 'Movimento simétrico', at: 'all', test: lib.symmetric(1) },
@@ -196,7 +196,7 @@ export const burpee: ExerciseSpec = {
   review: {
     status: 'verificado',
     notes:
-      'Aterrissagem faz o papel do "em pé" (limite de 6 poses + braços interpolados em linha reta): braços descem abertos pelos lados, diferente do GIF (descem junto ao corpo). Sem flexão, como o GIF.',
+      'Aterrissagem faz o papel do "em pé" (limite de 6 poses). Braços livres em arco em volta do ombro (handPath "shoulder") na subida, no salto, na aterrissagem e na ida ao chão: terminam junto ao corpo na aterrissagem, como no GIF; no meio da descida passam abertos à frente/ao lado. Sem flexão, como o GIF.',
   },
 }
 

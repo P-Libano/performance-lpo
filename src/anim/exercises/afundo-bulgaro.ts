@@ -15,9 +15,8 @@ import { v, type V3 } from '../vec'
  * No fundo: coxa da frente ~horizontal, joelho da frente ~90°, joelho de trás perto do chão.
  *
  * Atenção na revisão: (1) a ficha do catálogo diz "afundo"/split squat, mas o GIF 0410 é o búlgaro (pé de trás
- * no banco) e é o que está desenhado; (2) o motor põe o calcanhar sempre "para baixo" (solve, pose.ts), então
- * o pé de trás tem a sola virada para o banco (calcanhar 2 cm abaixo do tampo, na borda). Na folha isso se lê
- * como peito do pé apoiado, mas a geometria do pé de trás não é anatômica.
+ * no banco) e é o que está desenhado; (2) o pé de trás usa `sole` para cima: o peito do pé e os dedos apoiam
+ * no tampo e o calcanhar fica no ar, acima do tornozelo, como no GIF.
  */
 
 const BENCH = { x0: -160, x1: -72 }
@@ -26,7 +25,7 @@ const FRONT: Side = 'L'
 const REAR: Side = 'R'
 const frontFoot = footFlat(0, 10, 0)
 /** peito do pé no banco: tornozelo ~5 cm acima do tampo, dedos para trás encostados no tampo */
-const rearFoot: Foot = { ankle: v(-70, BENCH_TOP + 5, -10), toe: v(-90, BENCH_TOP + 0.5, -10) }
+const rearFoot: Foot = { ankle: v(-70, BENCH_TOP + 5, -10), toe: v(-90, BENCH_TOP + 0.5, -10), sole: v(0, 1, 0) }
 const HAND_Z = 24
 
 const pose = (pelvis: V3, pitch: number): PoseSpec => {
@@ -102,6 +101,16 @@ export const afundoBulgaro: ExerciseSpec = {
         if (h < 2 || h > 9) return `tornozelo de trás a ${fmt(h)} cm do tampo (esperado 2–9)`
         if (s.toe[REAR][0] > BENCH.x1 || s.toe[REAR][0] < BENCH.x0) return 'dedos de trás fora do banco'
         return true
+      },
+    },
+    {
+      name: 'Pé de trás com o peito do pé no banco (sola para cima, calcanhar não encosta)',
+      at: 'all',
+      test: (s) => {
+        const up = s.heel[REAR][1] - s.ankle[REAR][1]
+        if (up < 4) return `calcanhar de trás ${fmt(up)} cm acima do tornozelo (esperado ≥ 4: sola para cima)`
+        const t = s.toe[REAR][1] - BENCH_TOP
+        return (t >= 0 && t <= 2) || `ponta do pé de trás a ${fmt(t)} cm do tampo (esperado 0–2)`
       },
     },
     { name: 'Halteres no mesmo nível', at: 'all', test: lib.handsLevel(1) },

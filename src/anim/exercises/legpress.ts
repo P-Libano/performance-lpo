@@ -2,7 +2,7 @@ import type { Skeleton } from '../body'
 import { SIDES } from '../body'
 import { lib } from '../checks'
 import { jointAngle, type Foot, type PoseSpec } from '../pose'
-import type { PropSpec } from '../props'
+import { legPressPlatform, type PropSpec } from '../props'
 import type { ExerciseSpec } from '../spec'
 import { add, dot, len, mul, sub, v, type V3 } from '../vec'
 
@@ -16,11 +16,9 @@ import { add, dot, len, mul, sub, v, type V3 } from '../vec'
  * (joelho ≈ 90°), em cima a 85 cm (joelho ≈ 162°, sem travar). Pés na largura do quadril (z = ±14),
  * mãos nas manoplas ao lado do assento (fixas).
  *
- * RASCUNHO — bloqueado pelo motor: em solve() (pose.ts) o calcanhar é sempre posto do lado "de baixo" do pé
- * (reject(−y, frente do pé)), então nenhuma sola pode ficar virada para cima. A plataforma a 45° exige a sola
- * virada para cima/frente: o calcanhar sai ~9 cm do lado do atleta e a ponta entra na plataforma (na folha o
- * pé aparece "na ponta", sem apoiar a sola). Falta também a restrição "sola inteira na plataforma" (calcanhar e
- * ponta à mesma distância ao longo do trilho), que hoje falharia — não declarada para não deixar a suíte vermelha.
+ * Sola na plataforma: o pé usa `sole` = direção do trilho (a sola aponta para a plataforma, perpendicular a
+ * ela), então o calcanhar fica do lado da plataforma e encosta nela junto com a ponta (restrição "Sola inteira
+ * na plataforma", com o plano da plataforma de props.ts — legPressPlatform).
  */
 
 const SEAT_Y = 50
@@ -43,7 +41,8 @@ const ANKLE_H = 6.8 // = SEG.ankleHeight: tornozelo afastado da plataforma
 const footAt = (d: number, z: number): Foot => {
   const ankle = add(add(PELVIS, mul(RAIL_DIR, d)), v(0, 0, z))
   // como footFlat(): ponta 20 cm "à frente" do pé e encostada no apoio (ANKLE_H mais longe que o tornozelo)
-  return { ankle, toe: add(ankle, add(mul(PLATE_UP, 20.1), mul(RAIL_DIR, ANKLE_H))) }
+  // sola virada para a plataforma (perpendicular a ela = direção do trilho)
+  return { ankle, toe: add(ankle, add(mul(PLATE_UP, 20.1), mul(RAIL_DIR, ANKLE_H))), sole: RAIL_DIR }
 }
 
 const HANDS = { L: v(-22, SEAT_Y + 8, 30), R: v(-22, SEAT_Y + 8, -30) }
@@ -129,6 +128,15 @@ export const legPress: ExerciseSpec = {
         return Math.abs(dd) <= 0.5 || `pés desalinhados na plataforma (${fmt(dd)} cm)`
       },
     },
+    {
+      name: 'Sola inteira na plataforma (calcanhar e ponta encostados)',
+      at: 'all',
+      // plano da plataforma neste quadro (o mesmo do desenho), normal = trilho
+      test: (s) => {
+        const { face, rail } = legPressPlatform(props[0] as Extract<PropSpec, { kind: 'legPress' }>, s)
+        return lib.soleOn(face, rail, 1)(s)
+      },
+    },
     { name: 'Movimento simétrico', at: 'all', test: lib.symmetric(1) },
     { name: 'Mãos nas manoplas', at: 'all', test: lib.handsAt(HANDS, 0.5) },
     {
@@ -157,7 +165,11 @@ export const legPress: ExerciseSpec = {
       },
     },
   ],
-  review: { status: 'rascunho' },
+  review: {
+    status: 'verificado',
+    notes:
+      'Pés com `sole` na direção do trilho: calcanhar e ponta encostados na plataforma (restrição a 1 cm em todos os quadros). Na câmera de perfil (yaw 80) a plataforma e as anilhas tapam boa parte dos pés; a sola apoiada foi conferida numa câmera temporária (yaw 130, pitch 25). Na revisão, ver se vale outra câmera que mostre os pés.',
+  },
 }
 
 export default legPress
