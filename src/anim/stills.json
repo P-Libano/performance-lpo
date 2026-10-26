@@ -226,5 +226,19 @@
         "label": "Em pé com a barra"
       }
     ]
+  },
+  "lpo-tripla-extensao": {
+    "status": "rascunho",
+    "thumb": 1,
+    "stills": [
+      {
+        "src": "anim/lpo-tripla-extensao/1.webp",
+        "label": "Posição de potência"
+      },
+      {
+        "src": "anim/lpo-tripla-extensao/2.webp",
+        "label": "Extensão"
+      }
+    ]
   }
 }
