@@ -35,13 +35,14 @@ const airFeet = both(footFlat(0, 14, -11, 2.5), mirrorFoot)
 // Entre poses a guia gira com velocidade angular uniforme (spec.ts), o que permite giros grandes sem salto.
 // braços estendidos (barra pendurada): cotovelos para trás
 const POLE_BACK = both(v(-1, 0, 0.3), mirrorZ)
-// puxada alta (barra na clavícula, corpo ainda alto): cotovelos para cima, acima dos ombros, com o antebraço
-// pendurado na vertical sob o cotovelo (a barra pende das mãos pela gravidade)
-const POLE_HIGH = both(v(0, 1, 0), mirrorZ)
-// passagem por baixo: cotovelos bem abertos, na altura do ombro, passando por baixo da barra
-const POLE_TURN = both(v(-0.3, -0.3, 1), mirrorZ)
+// puxada alta (barra no ponto alto, corpo ainda estendido): braço perpendicular ao tronco (na altura do ombro,
+// aberto e à frente) e antebraço pendurado sob o cotovelo (a barra pende das mãos pela gravidade)
+const POLE_HIGH = both(v(0.6, 0.6, 0.5), mirrorZ)
+// passagem por baixo: os cotovelos giram de "abertos" para "à frente", na altura do ombro (nem sobem até a
+// orelha nem descem: subir e descer parecia o cotovelo se invertendo)
+const POLE_TURN = both(v(1, 0.3, -0.3), mirrorZ)
 // rack (barra em cima do deltoide): cotovelos à frente e altos (braço perto da horizontal), um pouco para dentro
-export const POLE_RACK = both(v(1, -0.2, -0.6), mirrorZ)
+export const POLE_RACK = both(v(1, -0.2, -0.3), mirrorZ)
 // barra saindo dos ombros (à frente do peito, braços dobrados): cotovelos para baixo e para trás, por baixo da
 // barra. Fica entre a guia do rack e a dos braços estendidos (quase opostas: direto de uma para a outra o
 // cotovelo saltava) e longe do braço, que aqui aponta para a frente e para baixo
@@ -78,30 +79,33 @@ export const barAtY = (b: Base, dx: number, y: number): PoseSpec => {
   return { ...b, hands: both(v(sh[0] + dx, y, GRIP_Z), mirrorZ) }
 }
 /**
- * Puxada alta (passo 4, foto do meio da referência): corpo ainda alto e estendido, barra rente ao peito
- * (`dy` cm em relação ao ombro), cotovelos ~20 cm acima dos ombros e ANTEBRAÇOS NA VERTICAL, com a barra
- * pendurada das mãos sob os cotovelos (gravidade). Geometria achada por simulação do braço: barra 16 cm abaixo
- * e 15 cm à frente do ombro, guia do cotovelo reta para cima.
+ * Puxada alta (passo 4, foto do meio da referência): corpo ainda estendido, braço PERPENDICULAR ao tronco
+ * (cotovelo na altura do ombro, aberto e à frente) e antebraço pendurado sob o cotovelo, ~10° da vertical.
+ * Geometria achada por simulação do braço: barra 20 cm à frente e 35 cm abaixo do ombro. Com os cotovelos
+ * acima dos ombros o braço subia até a orelha e depois descia: parecia o cotovelo se invertendo.
  */
-export const highPull = (dy = -16): PoseSpec => {
+export const highPull = (): PoseSpec => {
   const b = base(v(-1, STAND_Y + 1, 0), -3, -2, toes(4), POLE_HIGH)
-  return barAtY(b, 15, shouldersOf(b).L[1] + dy)
-}/**
- * Passagem por baixo da barra (turnover): a barra no ponto mais alto (`barY`, parada), o corpo descendo `dropY`
- * com os pés no ar indo para a base do encaixe, os cotovelos abertos passando por baixo da barra e o punho no
- * meio da virada sob ela.
+  return barAtY(b, 20, shouldersOf(b).L[1] - 35)
+}
+/**
+ * Passagem por baixo da barra (turnover): a barra no ponto mais alto (`barY`, quase parada) e o corpo começando a
+ * descer por baixo dela (pés no ar indo para a base do encaixe). A pelve é posta para a barra ficar `below` cm
+ * abaixo do ombro (~14–20): aí os cotovelos giram para a frente na altura do ombro e o punho começa a virar sob a barra.
  */
-export const turnover = (dropY: number, barY: number, pitch = 8): PoseSpec => ({
-  ...barAtY(base(v(-6, STAND_Y - dropY, 0), pitch, 0, airFeet, POLE_TURN), 15, barY),
-  rack: { L: 0.5, R: 0.5 },
-})
-// power clean: barra no peito na puxada alta (~125 cm), pico ~127 cm; o encaixe alto a recebe logo abaixo do pico
+export const turnover = (barY: number, below = 20, pitch = 6): PoseSpec => {
+  const b0 = base(v(-6, 0, 0), pitch, 0, airFeet, POLE_TURN)
+  const pelvisY = barY + below - shouldersOf(b0).L[1]
+  return { ...barAtY(base(v(-6, pelvisY, 0), pitch, 0, airFeet, POLE_TURN), 20, barY), rack: { L: 0.5, R: 0.5 } }
+}
+// power clean: barra ~107 cm na puxada alta, sobe até ~125 enquanto os cotovelos giram e o encaixe alto (acima
+// da paralela) a recebe logo abaixo do pico
 const HIGH_PULL = highPull()
-const TURNOVER = turnover(15, 127)
+const TURNOVER = turnover(125, 14)
 /** Barra em cima do deltoide (à frente e acima do ombro): braço perto da horizontal e cotovelo à frente (pose.ts, `rack`). */
 export const RACK = { dx: 11, dy: 7.5 }
 /** Encaixe (passo 5): barra apoiada na frente dos ombros, cotovelos à frente, agachamento frontal alto, base aberta. */
-const CATCH = racked(fromShoulder(base(v(-12, STAND_Y - 22, 0), 10, 2, catchFeet, POLE_RACK), RACK.dx, RACK.dy))
+const CATCH = racked(fromShoulder(base(v(-13, STAND_Y - 23, 0), 10, 2, catchFeet, POLE_RACK), RACK.dx + 1, RACK.dy))
 /**
  * Barra saindo dos ombros (início da volta): os cotovelos CAEM e a barra desce pela frente do peito; os pés voltam
  * para a base da puxada. Sem esta pose, da barra nos ombros (cotovelos à frente) direto para os braços estendidos

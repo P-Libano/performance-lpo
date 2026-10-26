@@ -19,15 +19,16 @@ const K = (p: PoseSpec): PoseSpec => ({ ...p, kneePole: { L: unit(sub(p.feet.L.t
 
 /** Encaixe no fundo: quadril abaixo dos joelhos, tronco quase vertical, cotovelos altos à frente, barra nos ombros,
  * base aberta (pontas e joelhos para fora), queixo para cima (a barra no deltoide fica logo abaixo do queixo). */
-const CATCH_DEEP = K(racked(fromShoulder(base(v(-20, 41, 0), 22, -10, catchFeet, POLE_RACK), RACK.dx + 2, RACK.dy)))
-// Altura da barra (cm): rente ao peito na puxada alta (~125, antebraços na vertical), quase parada no alto (~127)
-// enquanto o corpo mergulha com os pés no ar, pousa nos ombros logo abaixo do pico e DESCE com o atleta até o
-// fundo (~90 cm): é o "ajuste de altura" da recepção.
+const CATCH_DEEP = K(racked(fromShoulder(base(v(-18, 41, 0), 18, -14, catchFeet, POLE_RACK), RACK.dx + 5, RACK.dy)))
+// Altura da barra (cm): ~106 na puxada alta (braço perpendicular ao tronco, antebraço pendurado), pico ~110
+// enquanto os cotovelos giram para a frente e o corpo mergulha, pousa nos ombros (~108) num agachamento parcial
+// e DESCE com o atleta até o fundo (~91 cm): é o "ajuste de altura" da recepção. A barra quase não se mexe;
+// quem entra por baixo dela é o corpo.
 const HIGH_PULL = K(highPull())
-/** Passagem por baixo da barra: barra parada no alto, o corpo começando a mergulhar. */
-const TURNOVER = K(turnover(17, 127, 8))
+/** Passagem por baixo da barra: barra parada no alto, cotovelos girando para a frente. */
+const TURNOVER = K(turnover(110))
 /** Encontro com a barra: ela pousa nos ombros num agachamento parcial, logo abaixo do pico. */
-const MEET = K(racked(fromShoulder(base(v(-12, 74, 0), 12, -6, catchFeet, POLE_RACK), RACK.dx + 1, RACK.dy)))
+const MEET = K(racked(fromShoulder(base(v(-14, 57.4, 0), 13, -14, catchFeet, POLE_RACK), RACK.dx + 5, RACK.dy)))
 export const clean: ExerciseSpec = {
   id: 'lpo-clean-chao',
   datasetId: 'lpo-clean-chao',
