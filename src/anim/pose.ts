@@ -189,6 +189,22 @@ export const mirrorFoot = (f: Foot): Foot => ({ ankle: mirrorZ(f.ankle), toe: mi
 
 const sideSign = (s: Side) => (s === 'L' ? 1 : -1)
 
+/**
+ * Guias padrão (sem `kneePole`/`elbowPole` na pose). Joelho: na direção da ponta do pé, um pouco para fora — NÃO a
+ * frente do tronco (com o tronco inclinado, no terra e no agachamento, ela aponta para baixo e o joelho abria).
+ * Cotovelo: para baixo, para fora e um pouco para trás em relação ao tronco. Usadas também na interpolação: de
+ * uma pose com guia para outra sem, a guia vai até a padrão (antes ficava a da 1ª pose e o joelho/cotovelo
+ * saltava quando a 2ª pose começava).
+ */
+export function defaultKneePole(p: Pick<PoseSpec, 'feet'>, s: Side): V3 {
+  const toeDir = unit(sub(p.feet[s].toe, p.feet[s].ankle))
+  return add(toeDir, mul(v(-toeDir[2], 0, toeDir[0]), sideSign(s) * 0.1))
+}
+export function defaultElbowPole(p: Pick<PoseSpec, 'pitch' | 'yaw' | 'twist'>, s: Side): V3 {
+  const { up, front, left } = trunkFrame(p.pitch, p.yaw, p.twist)
+  return add(add(mul(up, -1), mul(left, sideSign(s) * 0.6)), mul(front, -0.3))
+}
+
 /** Punho em relação à barra com ela apoiada nos ombros (`rack`), cm. */
 const RACK_WRIST = { fwd: 2, down: 0 }
 
@@ -211,10 +227,7 @@ export function solve(p: PoseSpec): Skeleton {
     // ── perna
     const hip = add(pelvis, mul(left, k * SEG.hipHalf))
     const foot = p.feet[s]
-    // padrão: o joelho dobra na direção da ponta do pé (um pouco para fora). NÃO usar a frente do tronco:
-    // com o tronco inclinado (terra, agachamento) ela aponta para baixo e o joelho abria para o lado.
-    const toeDir = unit(sub(foot.toe, foot.ankle))
-    const kneePole = p.kneePole?.[s] ?? add(toeDir, mul(v(-toeDir[2], 0, toeDir[0]), k * 0.1))
+    const kneePole = p.kneePole?.[s] ?? defaultKneePole(p, s)
     const legIk = ik2(hip, foot.ankle, LEG.a, LEG.b, kneePole)
     const ankle = legIk.tip
     // calcanhar: atrás do tornozelo e do lado da sola. A direção da sola é perpendicular ao pé no plano
@@ -234,7 +247,7 @@ export function solve(p: PoseSpec): Skeleton {
 
     // ── braço
     const shoulder = add(chest, mul(left, k * SEG.shoulderHalf))
-    const elbowPole = p.elbowPole?.[s] ?? add(add(mul(up, -1), mul(left, k * 0.6)), mul(front, -0.3))
+    const elbowPole = p.elbowPole?.[s] ?? defaultElbowPole(p, s)
     const armIk = ik2(shoulder, p.hands[s], ARM.a, ARM.b, elbowPole)
     const toHand = unit(sub(armIk.tip, armIk.mid))
     out.shoulder[s] = shoulder
@@ -286,13 +299,28 @@ export const EASE: Record<Ease, (t: number) => number> = {
 }
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
-const lerpPole = (a: V3 | undefined, b: V3 | undefined, t: number) => (a && b ? lerp3(unit(a), unit(b), t) : (b ?? a))
+/** Interpolação esférica de direções (unitárias na saída): velocidade angular constante em t. */
+export function slerp(a: V3, b: V3, t: number): V3 {
+  const ua = unit(a)
+  const ub = unit(b)
+  const om = Math.acos(Math.max(-1, Math.min(1, dot(ua, ub))))
+  if (om < 1e-4) return ua
+  if (Math.PI - om < 1e-3) {
+    // opostas: gira por um caminho perpendicular qualquer (o seno do ângulo seria zero)
+    const perp = unit(Math.abs(ua[1]) < 0.9 ? cross(ua, v(0, 1, 0)) : cross(ua, v(1, 0, 0)))
+    return unit(add(mul(ua, Math.cos(t * Math.PI)), mul(perp, Math.sin(t * Math.PI))))
+  }
+  return unit(add(mul(ua, Math.sin((1 - t) * om) / Math.sin(om)), mul(ub, Math.sin(t * om) / Math.sin(om))))
+}
+// guias: giro uniforme (em linha reta, duas direções distantes giravam quase tudo no meio da transição)
+const lerpPole = (a: V3 | undefined, b: V3 | undefined, t: number) => (a && b ? slerp(a, b, t) : (b ?? a))
 const sidesLerp = <T>(a: Record<Side, T>, b: Record<Side, T>, f: (x: T, y: T) => T): Record<Side, T> => ({ L: f(a.L, b.L), R: f(a.R, b.R) })
 
 /** Pose intermediária (t já com a curva aplicada). */
 export function mixPose(a: PoseSpec, b: PoseSpec, t: number): PoseSpec {
-  const pole = (x?: Partial<Record<Side, V3>>, y?: Partial<Record<Side, V3>>) =>
-    x || y ? { L: lerpPole(x?.L, y?.L, t), R: lerpPole(x?.R, y?.R, t) } : undefined
+  // lado sem guia: vale a padrão daquela pose (a guia vai até ela, sem salto quando a pose seguinte começa)
+  const knee = (s: Side) => lerpPole(a.kneePole?.[s] ?? defaultKneePole(a, s), b.kneePole?.[s] ?? defaultKneePole(b, s), t)
+  const elbow = (s: Side) => lerpPole(a.elbowPole?.[s] ?? defaultElbowPole(a, s), b.elbowPole?.[s] ?? defaultElbowPole(b, s), t)
   return {
     pelvis: lerp3(a.pelvis, b.pelvis, t),
     pitch: lerp(a.pitch, b.pitch, t),
@@ -307,8 +335,8 @@ export function mixPose(a: PoseSpec, b: PoseSpec, t: number): PoseSpec {
       toe: lerp3(x.toe, y.toe, t),
       ...(x.sole || y.sole ? { sole: lerpPole(x.sole, y.sole, t) } : {}),
     })),
-    elbowPole: pole(a.elbowPole, b.elbowPole),
-    kneePole: pole(a.kneePole, b.kneePole),
+    elbowPole: a.elbowPole || b.elbowPole ? { L: elbow('L'), R: elbow('R') } : undefined,
+    kneePole: a.kneePole || b.kneePole ? { L: knee('L'), R: knee('R') } : undefined,
   }
 }
 

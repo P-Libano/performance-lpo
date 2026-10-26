@@ -164,14 +164,14 @@ export const pranchaRotacao: ExerciseSpec = {
     'McGill — Low Back Disorders, 3ª ed. (Human Kinetics, 2016), prancha frontal e ponte lateral; Delavier — Guia dos Movimentos de Musculação (Manole), prancha; dataset 0464 (alvo: abdômen; secundários: oblíquos, ombros). Distribuição por fase a validar na revisão.',
   props: [{ kind: 'mat', x0: -165, x1: 50 }], // tornozelos em x ≈ −135, mãos em x ≈ 34
   frames: [
-    { name: 'Prancha', pose: FRONT, moveMs: 550, holdMs: 600, phase: 'Retorno', ease: 'out' },
+    { name: 'Prancha', pose: FRONT, moveMs: 550, holdMs: 600, phase: 'Retorno', ease: 'out', handPath: 'shoulder' },
     { name: 'Girando (esquerda)', pose: MID_L, moveMs: 650, holdMs: 0, phase: 'Rotação', ease: 'in', handPath: 'shoulder' },
     { name: 'Prancha lateral (esquerda)', pose: SIDE_L, moveMs: 350, holdMs: 700, phase: 'Rotação', ease: 'out', handPath: 'shoulder' },
     // volta pela mesma pose do meio: direto da lateral para a frontal, a interpolação abaixava o ombro de apoio
     // braço de cima em arco em volta do ombro (handPath): em linha reta no mundo a mão passaria do alcance
     // tempos: a mão anda ~100 cm entre a prancha e o meio do giro e ~30 cm entre o meio e a lateral
     { pose: MID_L, moveMs: 300, holdMs: 0, phase: 'Retorno', ease: 'in', handPath: 'shoulder' },
-    { name: 'Prancha', pose: FRONT, moveMs: 550, holdMs: 600, phase: 'Retorno', ease: 'out' },
+    { name: 'Prancha', pose: FRONT, moveMs: 550, holdMs: 600, phase: 'Retorno', ease: 'out', handPath: 'shoulder' },
     { name: 'Girando (direita)', pose: MID_R, moveMs: 650, holdMs: 0, phase: 'Rotação', ease: 'in', handPath: 'shoulder' },
     { name: 'Prancha lateral (direita)', pose: SIDE_R, moveMs: 350, holdMs: 700, phase: 'Rotação', ease: 'out', handPath: 'shoulder' },
     { pose: MID_R, moveMs: 300, holdMs: 0, phase: 'Retorno', ease: 'in', handPath: 'shoulder' },

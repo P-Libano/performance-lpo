@@ -3,7 +3,7 @@ import { MUSCLE_IDS } from './muscles'
 import { jointAngle } from './pose'
 import { DIM, insideSolid, midHands, solidsAt, type PropSpec } from './props'
 import { cycleMs, sampleAt, type Check, type ExerciseSpec } from './spec'
-import { add, angle, dot, len, mul, sub, v, type V3 } from './vec'
+import { add, angle, dist, dot, len, mul, sub, v, type V3 } from './vec'
 
 /**
  * Verificações das animações (docs/animacoes/PROCESSO.md, portão 2).
@@ -342,6 +342,30 @@ export function runChecks(spec: ExerciseSpec, stepMs = 40): Failure[] {
       }
     }
   })
+  // continuidade: cotovelo/joelho não salta. Preso entre as duas pontas do membro, ele só anda muito mais que
+  // elas se a cinemática inversa "trocou de lado" (guia quase alinhada com o eixo ombro–punho/quadril–tornozelo)
+  // Acusa (1) descontinuidade: um passo bem maior que os vizinhos (giro rápido e constante, como o dos cotovelos
+  // passando por baixo da barra no clean, não é salto) ou (2) mais de 4 m/s com as pontas quase paradas.
+  const JUMP_STEP = 10
+  const sk: Skeleton[] = []
+  for (let t = 0; t <= T + JUMP_STEP; t += JUMP_STEP) sk.push(sampleAt(spec, t).skeleton)
+  for (const [mid, a, b, nome] of [
+    ['elbow', 'shoulder', 'wrist', 'cotovelo'],
+    ['knee', 'hip', 'ankle', 'joelho'],
+  ] as const)
+    for (const k of SIDES) {
+      const step = (i: number) => dist(sk[i][mid][k], sk[i - 1][mid][k])
+      for (let i = 1; i < sk.length - 1; i++) {
+        const dMid = step(i)
+        const dEnds = Math.max(dist(sk[i][a][k], sk[i - 1][a][k]), dist(sk[i][b][k], sk[i - 1][b][k]))
+        if (dMid <= 3 * dEnds + 2) continue
+        const around = Math.max(i > 1 ? step(i - 1) : 0, step(i + 1))
+        if (dMid > 1.6 * around + 0.5 || dMid > 4 + 3 * dEnds) {
+          const t = i * JUMP_STEP
+          push({ check: 'geral', where: `${t} ms (${sampleAt(spec, t).phase})`, message: `${nome} (${k}) salta ${fmt(dMid)} cm em ${JUMP_STEP} ms (a guia ficou alinhada com o membro?)` })
+        }
+      }
+    }
   // todos os quadros
   for (let t = 0; t < T; t += stepMs) {
     const smp = sampleAt(spec, t)

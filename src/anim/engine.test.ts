@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { ARM } from './body'
 import { lib, runChecks, specErrors } from './checks'
 import { terra } from './exercises/terra'
-import { armsAtSides, both, footFlat, jointAngle, mirrorFoot, mirrorPose, solve, type PoseSpec } from './pose'
+import { armsAtSides, both, footFlat, jointAngle, mirrorFoot, mirrorPose, mirrorZ, shouldersOf, slerp, solve, type PoseSpec } from './pose'
 import { sampleAt, type ExerciseSpec } from './spec'
-import { v } from './vec'
+import { add, dot, len, unit, v } from './vec'
 
 /**
  * Recursos do motor pedidos nos relatórios do piloto: sola em superfície inclinada, espelho de poses,
@@ -144,5 +144,36 @@ describe('biblioteca de restrições', () => {
     expect(lib.seatedOn(0)(s)).not.toBe(true)
     expect(lib.heightRel((k) => k.hand.L, (k) => k.shoulder.L, 40, 80, 'ombro acima da mão')(s)).toBe(true)
     expect(lib.knee(170, 180, 'L')(start)).not.toBe(true)
+  })
+})
+
+describe('motor: continuidade do cotovelo', () => {
+  // braço dobrado com a mão à frente do peito; a guia do cotovelo passa de um lado do eixo ombro→mão para o
+  // outro: no meio ela fica alinhada com o braço e o cotovelo troca de lado de uma vez (o salto que a checagem pega)
+  const sh = shouldersOf(standing).L
+  const hand = add(sh, v(30, -12, -4))
+  const axis = unit(add(hand, v(-sh[0], -sh[1], -sh[2])))
+  const pose = (pole: readonly [number, number, number]): PoseSpec => ({ ...standing, hands: both(hand, mirrorZ), elbowPole: both(v(...pole), mirrorZ) })
+  const a = add(axis, v(0, 0.25, 0))
+  const b = add(axis, v(0, -0.25, 0))
+  const flip: ExerciseSpec = {
+    ...terra,
+    checks: [],
+    frames: [
+      { name: 'A', pose: pose([a[0], a[1], a[2]]), moveMs: 300, holdMs: 300, phase: 'Descida', ease: 'inout' },
+      { name: 'B', pose: pose([b[0], b[1], b[2]]), moveMs: 300, holdMs: 300, phase: 'Descida', ease: 'inout' },
+    ],
+  }
+
+  it('guia cruzando o eixo do braço é acusada como salto do cotovelo', () => {
+    expect(runChecks(flip).some((f) => /cotovelo \(L\) salta/.test(f.message))).toBe(true)
+  })
+
+  it('slerp gira com velocidade angular constante, inclusive entre direções opostas', () => {
+    const p = slerp(v(1, 0, 0), v(0, 1, 0), 0.5)
+    expect(Math.abs(dot(p, v(1, 0, 0)) - Math.SQRT1_2)).toBeLessThan(1e-9)
+    const q = slerp(v(1, 0, 0), v(-1, 0, 0), 0.5)
+    expect(len(q)).toBeCloseTo(1, 9)
+    expect(Math.abs(dot(q, v(1, 0, 0)))).toBeLessThan(1e-9)
   })
 })

@@ -1,6 +1,6 @@
 import type { Skeleton } from './body'
 import type { MuscleId } from './muscles'
-import { EASE, mixPose, shouldersOf, solve, type Ease, type PoseSpec } from './pose'
+import { EASE, defaultElbowPole, defaultKneePole, mixPose, shouldersOf, slerp, solve, type Ease, type PoseSpec } from './pose'
 import { add, dot, len, mul, sub, unit, type V3 } from './vec'
 import type { PropSpec } from './props'
 
@@ -163,8 +163,6 @@ function fullPose(p: PoseSpec, all: PoseSpec[]): PoseSpec {
     const d = get(p) ?? all.map(get).find((x) => x)
     return d ? unit(d) : undefined
   }
-  const poles = (get: (q: PoseSpec) => Partial<Record<'L' | 'R', V3>> | undefined) =>
-    all.some(get) ? { L: fillDir((q) => get(q)?.L), R: fillDir((q) => get(q)?.R) } : undefined
   const foot = (k: 'L' | 'R') => ({
     ankle: p.feet[k].ankle,
     toe: p.feet[k].toe,
@@ -180,8 +178,14 @@ function fullPose(p: PoseSpec, all: PoseSpec[]): PoseSpec {
     ...(all.some((q) => q.palms) ? { palms: { L: p.palms?.L ?? 0, R: p.palms?.R ?? 0 } } : {}),
     ...(all.some((q) => q.rack) ? { rack: { L: p.rack?.L ?? 0, R: p.rack?.R ?? 0 } } : {}),
     feet: { L: foot('L'), R: foot('R') },
-    ...(all.some((q) => q.elbowPole) ? { elbowPole: poles((q) => q.elbowPole) } : {}),
-    ...(all.some((q) => q.kneePole) ? { kneePole: poles((q) => q.kneePole) } : {}),
+    // guia ausente nesta pose = a padrão dela (não a de outra pose do trecho: na parada seguinte, sem guia, o
+    // joelho/cotovelo voltava de uma vez para a padrão)
+    ...(all.some((q) => q.elbowPole)
+      ? { elbowPole: { L: unit(p.elbowPole?.L ?? defaultElbowPole(p, 'L')), R: unit(p.elbowPole?.R ?? defaultElbowPole(p, 'R')) } }
+      : {}),
+    ...(all.some((q) => q.kneePole)
+      ? { kneePole: { L: unit(p.kneePole?.L ?? defaultKneePole(p, 'L')), R: unit(p.kneePole?.R ?? defaultKneePole(p, 'R')) } }
+      : {}),
   } as PoseSpec
 }
 
@@ -209,7 +213,23 @@ function sampleRun(fr: Keyframe[], idx: number[], i: number, lt: number): Sample
   const stopOut = slow(fr[idx[m - 1]].ease, 'out')
   const f = (y: number[]) => steffen(y, K, j, tau, stopIn, stopOut)
   const pose = curveOf(P, f)
-  if (idx.some((k) => fr[k].handPath === 'shoulder')) {
+  // guias de cotovelo/joelho: giro com velocidade angular uniforme (slerp) entre as poses vizinhas, com o
+  // ângulo acumulado passando pela mesma curva suave. Interpoladas componente a componente, duas guias distantes
+  // (ex.: cotovelo por fora → à frente no rack, ~130°) giravam quase tudo no meio da transição, de uma vez
+  for (const key of ['elbowPole', 'kneePole'] as const) {
+    if (!pose[key]) continue
+    for (const k of ['L', 'R'] as const) {
+      const dirs = P.map((p) => p[key]![k]!)
+      const acc = [0]
+      for (let q = 1; q < dirs.length; q++) acc.push(acc[q - 1] + angleBetween(dirs[q - 1], dirs[q]))
+      const span = acc[j + 1] - acc[j]
+      const u = span < 1e-6 ? 0 : Math.min(1, Math.max(0, (f(acc) - acc[j]) / span))
+      pose[key]![k] = slerp(dirs[j], dirs[j + 1], u)
+    }
+  }
+  // só na transição marcada: no mesmo trecho pode haver mão presa ao ombro (braços estendidos) e barra com
+  // altura própria no mundo (puxada alta, passagem por baixo)
+  if (fr[i].handPath === 'shoulder') {
     // mãos em arco em volta do ombro: direção e distância ao ombro passam pela mesma curva
     // (a mão que não muda no trecho, ex. apoiada no chão, fica onde está)
     const sm = shouldersOf(pose)
@@ -221,6 +241,9 @@ function sampleRun(fr: Keyframe[], idx: number[], i: number, lt: number): Sample
   }
   return { pose, skeleton: solve(pose), phase: fr[i].phase, frame: i, holding: false }
 }
+
+/** Ângulo (rad) entre duas direções. */
+const angleBetween = (a: V3, b: V3) => Math.acos(Math.max(-1, Math.min(1, dot(unit(a), unit(b)))))
 
 /** Mãos em arco em volta do ombro: direção (esférica) e distância ao ombro interpoladas. */
 function handsOnArc(a: PoseSpec, b: PoseSpec, mid: PoseSpec, t: number): PoseSpec['hands'] {
