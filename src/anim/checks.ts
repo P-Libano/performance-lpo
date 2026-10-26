@@ -342,6 +342,22 @@ export function runChecks(spec: ExerciseSpec, stepMs = 40): Failure[] {
       }
     }
   })
+  // aparelho rígido seguro com as duas mãos (barra, barra fixa, puxada): a distância entre as mãos não muda
+  // (um arco da mão em volta do ombro chegou a "esticar" a barra de 1,1 m para 1,6 m na descida do arranco)
+  if (spec.props.some((p) => p.kind === 'barbell' || p.kind === 'pullupBar' || p.kind === 'latPulldown')) {
+    const grip = (t: number) => {
+      const s = sampleAt(spec, t).skeleton
+      return dist(s.hand.L, s.hand.R)
+    }
+    const g0 = grip(keyframeTime(spec, 0))
+    for (let t = 0; t < T; t += 10) {
+      const g = grip(t)
+      if (Math.abs(g - g0) > 2) {
+        push({ check: 'geral', where: `${t} ms (${sampleAt(spec, t).phase})`, message: `mãos a ${fmt(g)} cm uma da outra (a pegada é ${fmt(g0)}: a barra é rígida)` })
+        break
+      }
+    }
+  }
   // continuidade: cotovelo/joelho não salta. Preso entre as duas pontas do membro, ele só anda muito mais que
   // elas se a cinemática inversa "trocou de lado" (guia quase alinhada com o eixo ombro–punho/quadril–tornozelo)
   // Acusa (1) descontinuidade: um passo bem maior que os vizinhos (giro rápido e constante, como o dos cotovelos

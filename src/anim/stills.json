@@ -241,6 +241,32 @@
       }
     ]
   },
+  "lpo-snatch-chao": {
+    "status": "rascunho",
+    "thumb": 3,
+    "stills": [
+      {
+        "src": "anim/lpo-snatch-chao/1.webp",
+        "label": "Posição inicial"
+      },
+      {
+        "src": "anim/lpo-snatch-chao/2.webp",
+        "label": "Barra na dobra do quadril"
+      },
+      {
+        "src": "anim/lpo-snatch-chao/3.webp",
+        "label": "Saltinho"
+      },
+      {
+        "src": "anim/lpo-snatch-chao/4.webp",
+        "label": "Fundo do agachamento"
+      },
+      {
+        "src": "anim/lpo-snatch-chao/5.webp",
+        "label": "Em pé com a barra acima da cabeça"
+      }
+    ]
+  },
   "lpo-tripla-extensao": {
     "status": "rascunho",
     "thumb": 1,
