@@ -61,7 +61,8 @@ qual dos dois é o certo. Não anime "o que deveria ser" nem "o que o GIF mostra
 
 - Use os construtores de pose (`src/anim/pose.ts`): você informa onde ficam a pelve, a inclinação do tronco,
   as mãos e os pés (pontos de contato); joelhos e cotovelos saem da cinemática inversa.
-- De 2 a 8 poses por exercício: uma por início/fim de fase, mais intermediárias onde o caminho curva.
+- De 2 a 10 poses por exercício: uma por início/fim de fase, mais intermediárias onde o caminho curva (10 só
+  para movimentos de muitas fases, como os LPO: puxadas, passagem por baixo da barra, encaixe e recuperação).
 - Intermediárias com `holdMs: 0` formam com as vizinhas um trecho contínuo (`sampleAt`): a curva passa por
   cada pose no seu tempo, sem quina nem salto de velocidade, e só para nas poses com pausa. Distribua os
   `moveMs` pela distância que o corpo percorre em cada transição (mesma velocidade média), senão o
@@ -134,7 +135,7 @@ qual dos dois é o certo. Não anime "o que deveria ser" nem "o que o GIF mostra
 
 | Item | Limite |
 |---|---|
-| poses-chave | 2 a 8 |
+| poses-chave | 2 a 10 |
 | `moveMs` de cada transição | 150–4000 ms |
 | ciclo inteiro | 1,5–12 s |
 | pose do meio | `holdMs > 0` |

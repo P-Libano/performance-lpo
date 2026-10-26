@@ -3,7 +3,7 @@ import { lib } from '../checks'
 import type { ExerciseSpec } from '../spec'
 import { both, mirrorZ, type PoseSpec } from '../pose'
 import { sub, unit, v } from '../vec'
-import { barOnShoulders, base, EXTENSION, flat, fmt, fromShoulder, HIGH_PULL, KNEE, MID_THIGH, POLE_RACK, racked, SETUP, STAND, STRAIGHT_ARMS } from './power-clean'
+import { barOnShoulders, base, EXTENSION, flat, fmt, fromShoulder, HIGH_PULL, KNEE, MID_THIGH, POLE_RACK, RACK, racked, SETUP, STAND, STRAIGHT_ARMS, turnover } from './power-clean'
 
 /*
  * Clean completo (arremesso do chão, LPO): mesma puxada do power clean (power-clean.ts), mas a barra é recebida
@@ -19,8 +19,11 @@ import { barOnShoulders, base, EXTENSION, flat, fmt, fromShoulder, HIGH_PULL, KN
 const kneePole = both(unit(sub(flat.L.toe, flat.L.ankle)), mirrorZ)
 const K = (p: PoseSpec): PoseSpec => ({ ...p, kneePole })
 
-/** Encaixe no fundo: quadril abaixo dos joelhos, tronco quase vertical, cotovelos altos à frente, barra nos ombros. */
-const CATCH_DEEP = K(racked(fromShoulder(base(v(-20, 41, 0), 24, 4, flat, POLE_RACK), 12, 1)))
+/** Encaixe no fundo: quadril abaixo dos joelhos, tronco quase vertical, cotovelos altos à frente, barra nos ombros,
+ * queixo para cima (com o tronco inclinado, a barra no deltoide fica logo abaixo do queixo). */
+const CATCH_DEEP = K(racked(fromShoulder(base(v(-20, 41, 0), 24, -10, flat, POLE_RACK), RACK.dx + 2, RACK.dy)))
+/** Passagem por baixo da barra: como no power clean, com o corpo já mais baixo (vai ao fundo). */
+const TURNOVER = K(turnover(18))
 
 export const clean: ExerciseSpec = {
   id: 'lpo-clean-chao',
@@ -54,16 +57,16 @@ export const clean: ExerciseSpec = {
   props: [{ kind: 'barbell' }],
   // mesma ordem do power clean: o encaixe é a pose do meio (miniatura do app)
   frames: [
-    { name: 'Barra no joelho', pose: K(KNEE), moveMs: 700, holdMs: 0, phase: 'Primeira puxada', ease: 'in', handPath: 'shoulder' },
     { name: 'Barra no meio da coxa', pose: K(MID_THIGH), moveMs: 320, holdMs: 0, phase: 'Primeira puxada', ease: 'linear' },
-    { name: 'Extensão', pose: K(EXTENSION), moveMs: 220, holdMs: 0, phase: 'Segunda puxada', ease: 'linear' },
-    { name: 'Puxada alta', pose: K(HIGH_PULL), moveMs: 200, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
+    { name: 'Extensão', pose: K(EXTENSION), moveMs: 260, holdMs: 0, phase: 'Segunda puxada', ease: 'linear' },
+    { name: 'Puxada alta', pose: K(HIGH_PULL), moveMs: 220, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
+    { name: 'Passagem por baixo da barra', pose: TURNOVER, moveMs: 220, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
     { name: 'Encaixe no fundo', pose: CATCH_DEEP, moveMs: 340, holdMs: 500, phase: 'Encaixe', ease: 'out' },
     { name: 'Em pé com a barra', pose: K(STAND), moveMs: 1300, holdMs: 500, phase: 'Recuperação', ease: 'inout' },
     { name: 'Barra descendo no joelho', pose: K(KNEE), moveMs: 900, holdMs: 0, phase: 'Retorno', ease: 'in', handPath: 'shoulder' },
     { name: 'Posição inicial', pose: K(SETUP), moveMs: 700, holdMs: 500, phase: 'Retorno', ease: 'out' },
-  ],
-  checks: [
+    { name: 'Barra no joelho', pose: K(KNEE), moveMs: 700, holdMs: 0, phase: 'Primeira puxada', ease: 'in', handPath: 'shoulder' },
+  ],  checks: [
     { name: 'Barra nivelada', at: 'all', test: lib.handsLevel(1) },
     { name: 'Movimento simétrico', at: 'all', test: lib.symmetric(1) },
     { name: 'Barra sobre o meio do pé na primeira puxada', at: { phase: 'Primeira puxada' }, test: lib.barOverMidfoot(5) },

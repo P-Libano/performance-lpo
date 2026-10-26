@@ -239,7 +239,7 @@ export function specErrors(spec: ExerciseSpec): string[] {
   if (!spec.phases.length) errs.push('sem fases')
   if (spec.keyPoints.length < 3) errs.push('menos de 3 pontos técnicos')
   if (!spec.muscleSource.trim()) errs.push('músculos sem fonte')
-  if (spec.frames.length < 2 || spec.frames.length > 8) errs.push('use de 2 a 8 poses-chave')
+  if (spec.frames.length < 2 || spec.frames.length > 10) errs.push('use de 2 a 10 poses-chave')
   const mid = spec.frames[Math.floor(spec.frames.length / 2)]
   if (mid && mid.holdMs <= 0)
     errs.push(`a pose do meio (nº ${Math.floor(spec.frames.length / 2) + 1}) vira a miniatura do app: precisa de holdMs > 0 — ponha nela a pose mais representativa`)

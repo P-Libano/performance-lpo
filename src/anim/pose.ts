@@ -44,7 +44,9 @@ export interface PoseSpec {
   palms?: Partial<Record<Side, number>>
   /**
    * Barra apoiada na frente dos ombros (encaixe do clean, agachamento frontal): 1 = punho dobrado para trás,
-   * 6 cm à frente e 3 cm abaixo da barra, palma para cima sob ela; o centro da mão continua na barra.
+   * logo à frente da barra e na altura dela, palma para cima sob ela; o centro da mão continua na barra.
+   * Com a barra em cima do deltoide (~10 cm à frente e ~6 cm acima do ombro), o braço fica perto da
+   * horizontal e o cotovelo vai à frente; com o punho longe do ombro, o cotovelo só consegue subir.
    * 0/ausente = mão em linha com o antebraço. Valores intermediários na transição.
    */
   rack?: Partial<Record<Side, number>>
@@ -188,7 +190,7 @@ export const mirrorFoot = (f: Foot): Foot => ({ ankle: mirrorZ(f.ankle), toe: mi
 const sideSign = (s: Side) => (s === 'L' ? 1 : -1)
 
 /** Punho em relação à barra com ela apoiada nos ombros (`rack`), cm. */
-const RACK_WRIST = { fwd: 6, down: 3 }
+const RACK_WRIST = { fwd: 2, down: 0 }
 
 /** Monta o esqueleto de uma pose. */
 export function solve(p: PoseSpec): Skeleton {

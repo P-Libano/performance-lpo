@@ -104,9 +104,9 @@ describe('joelho', () => {
 })
 
 describe('ficha: limites', () => {
-  it('mais de 8 poses-chave é acusado', () => {
-    const many = { ...terra, frames: [...terra.frames, ...terra.frames].slice(0, 9) }
-    expect(specErrors(many)).toContain('use de 2 a 8 poses-chave')
+  it('mais de 10 poses-chave é acusado', () => {
+    const many = { ...terra, frames: [...terra.frames, ...terra.frames].slice(0, 11) }
+    expect(specErrors(many)).toContain('use de 2 a 10 poses-chave')
   })
 
   it('pose do meio sem pausa é acusada (vira a miniatura)', () => {

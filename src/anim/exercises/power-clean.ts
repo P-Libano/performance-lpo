@@ -29,6 +29,8 @@ const toes = (lift: number): Record<Side, Foot> => both(footOnToes(0, 11, lift, 
 const POLE_BACK = both(v(-1, 0, 0.3), mirrorZ)
 const POLE_HIGH = both(v(-0.2, 1, 0.9), mirrorZ)
 export const POLE_RACK = both(v(1, 0.35, 0.3), mirrorZ)
+// no meio da virada: cotovelos por fora e já indo para a frente
+const POLE_TURN = both(v(0.7, 0.4, 1), mirrorZ)
 
 type Base = Omit<PoseSpec, 'hands'>
 export const base = (pelvis: V3, pitch: number, head: number, feet: Record<Side, Foot>, elbowPole: Record<Side, V3>): Base => ({ pelvis, pitch, head, feet, elbowPole })
@@ -54,10 +56,22 @@ export const MID_THIGH = hanging(base(v(-11, STAND_Y - 8, 0), 20, 4, flat, POLE_
 export const EXTENSION = hanging(base(v(-1, STAND_Y + 5, 0), -6, -2, toes(9), POLE_BACK), BAR_X + 4)
 /** Puxada alta (passo 4): cotovelos altos e por fora, barra subindo rente ao peito, ainda na ponta dos pés. */
 export const HIGH_PULL = fromShoulder(base(v(-2, STAND_Y + 2, 0), -4, -2, toes(6), POLE_HIGH), 15, -20)
+/**
+ * Passagem por baixo da barra (turnover): a barra no ponto mais alto, o corpo já descendo com os pés de volta no
+ * chão, os cotovelos girando de "para cima e para fora" para "à frente" e o punho começando a virar sob a barra.
+ * `dropY` = quanto a pelve já desceu (o clean completo desce mais).
+ */
+export const turnover = (dropY: number): PoseSpec => ({
+  ...fromShoulder(base(v(-6, STAND_Y - dropY, 0), 6, 0, flat, POLE_TURN), 12, 10),
+  rack: { L: 0.5, R: 0.5 },
+})
+const TURNOVER = turnover(10)
+/** Barra em cima do deltoide (à frente e acima do ombro): braço perto da horizontal e cotovelo à frente (pose.ts, `rack`). */
+export const RACK = { dx: 11, dy: 7.5 }
 /** Encaixe (passo 5): barra apoiada na frente dos ombros, cotovelos à frente, agachamento frontal alto. */
-const CATCH = racked(fromShoulder(base(v(-13, STAND_Y - 24, 0), 12, 2, flat, POLE_RACK), 12, 1))
+const CATCH = racked(fromShoulder(base(v(-13, STAND_Y - 24, 0), 12, 2, flat, POLE_RACK), RACK.dx, RACK.dy))
 /** Em pé com a barra nos ombros. */
-export const STAND = racked(fromShoulder(base(v(-2, STAND_Y - 0.3, 0), 2, 0, flat, POLE_RACK), 12, 1))
+export const STAND = racked(fromShoulder(base(v(-2, STAND_Y - 0.3, 0), 2, 0, flat, POLE_RACK), RACK.dx, RACK.dy))
 
 export const fmt = (n: number) => n.toFixed(1).replace('.', ',')
 /** Barra (meio das mãos) em relação ao ombro esquerdo/direito médio: [à frente, acima]. */
@@ -68,7 +82,7 @@ const barVsShoulder = (s: Skeleton) => {
 }
 export const barOnShoulders = (s: Skeleton) => {
   const [dx, dy] = barVsShoulder(s)
-  return (dx >= 4 && dx <= 18 && dy >= -6 && dy <= 5) || `barra ${fmt(dx)} cm à frente e ${fmt(dy)} cm acima dos ombros (esperado 4–18 à frente, −6 a 5)`
+  return (dx >= 6 && dx <= 16 && dy >= 2 && dy <= 10) || `barra ${fmt(dx)} cm à frente e ${fmt(dy)} cm acima dos ombros (esperado 6–16 à frente, 2 a 10 acima)`
 }
 export const STRAIGHT_ARMS = ['Posição inicial', 'Barra no joelho', 'Barra no meio da coxa', 'Extensão']
 
@@ -103,19 +117,20 @@ export const powerClean: ExerciseSpec = {
   muscleSource:
     'NSCA — Essentials of Strength Training and Conditioning, 4ª ed. (Haff & Triplett, 2016), cap. 15, power clean (fases e músculos: extensores de quadril, joelho e tornozelo; trapézio e deltoides na puxada alta). Distribuição por fase a validar na revisão.',
   props: [{ kind: 'barbell' }],
-  // começa na barra passando o joelho para o encaixe cair na pose do meio (miniatura do app); o ciclo fecha
-  // na posição inicial, de onde parte a primeira transição. `handPath: 'shoulder'`: com os braços
-  // estendidos quem leva a barra é o ombro (a mão em arco em volta dele nunca passa do alcance)
+  // começa no meio da coxa para o encaixe cair na pose do meio (miniatura do app); a barra no joelho fecha o
+  // ciclo e a 1ª transição parte dela. `handPath: 'shoulder'`: com os braços estendidos quem leva a barra é o
+  // ombro (a mão em arco em volta dele nunca passa do alcance)
   frames: [
-    { name: 'Barra no joelho', pose: KNEE, moveMs: 700, holdMs: 0, phase: 'Primeira puxada', ease: 'in', handPath: 'shoulder' },
     { name: 'Barra no meio da coxa', pose: MID_THIGH, moveMs: 320, holdMs: 0, phase: 'Primeira puxada', ease: 'linear' },
-    { name: 'Extensão', pose: EXTENSION, moveMs: 220, holdMs: 0, phase: 'Segunda puxada', ease: 'linear' },
-    { name: 'Puxada alta', pose: HIGH_PULL, moveMs: 200, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
-    { name: 'Encaixe', pose: CATCH, moveMs: 240, holdMs: 450, phase: 'Encaixe', ease: 'out' },
+    { name: 'Extensão', pose: EXTENSION, moveMs: 260, holdMs: 0, phase: 'Segunda puxada', ease: 'linear' },
+    { name: 'Puxada alta', pose: HIGH_PULL, moveMs: 220, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
+    { name: 'Passagem por baixo da barra', pose: TURNOVER, moveMs: 220, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
+    { name: 'Encaixe', pose: CATCH, moveMs: 260, holdMs: 500, phase: 'Encaixe', ease: 'out' },
     { name: 'Em pé com a barra', pose: STAND, moveMs: 750, holdMs: 500, phase: 'Recuperação', ease: 'inout' },
     // desce pela frente das pernas até o joelho (direto para as coxas, a barra raspava nelas)
     { name: 'Barra descendo no joelho', pose: KNEE, moveMs: 900, holdMs: 0, phase: 'Retorno', ease: 'in', handPath: 'shoulder' },
     { name: 'Posição inicial', pose: SETUP, moveMs: 700, holdMs: 500, phase: 'Retorno', ease: 'out' },
+    { name: 'Barra no joelho', pose: KNEE, moveMs: 700, holdMs: 0, phase: 'Primeira puxada', ease: 'in', handPath: 'shoulder' },
   ],  checks: [
     { name: 'Barra nivelada', at: 'all', test: lib.handsLevel(1) },
     { name: 'Movimento simétrico', at: 'all', test: lib.symmetric(1) },
