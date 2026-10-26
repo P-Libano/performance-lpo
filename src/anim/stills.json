@@ -267,6 +267,32 @@
       }
     ]
   },
+  "lpo-snatch-suspenso": {
+    "status": "rascunho",
+    "thumb": 3,
+    "stills": [
+      {
+        "src": "anim/lpo-snatch-suspenso/1.webp",
+        "label": "Em pé, barra no quadril"
+      },
+      {
+        "src": "anim/lpo-snatch-suspenso/2.webp",
+        "label": "Barra acima do joelho"
+      },
+      {
+        "src": "anim/lpo-snatch-suspenso/3.webp",
+        "label": "Saltinho"
+      },
+      {
+        "src": "anim/lpo-snatch-suspenso/4.webp",
+        "label": "Fundo do agachamento"
+      },
+      {
+        "src": "anim/lpo-snatch-suspenso/5.webp",
+        "label": "Em pé com a barra acima da cabeça"
+      }
+    ]
+  },
   "lpo-tripla-extensao": {
     "status": "rascunho",
     "thumb": 1,
