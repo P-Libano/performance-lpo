@@ -22,6 +22,7 @@ const QUALITY = 0.86
 await build({
   root,
   configFile: false,
+  publicDir: false, // sem isto o vite copiava public/ (imagens, ícones) para tools/render3d
   logLevel: 'warn',
   build: {
     outDir: tool,
