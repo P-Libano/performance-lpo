@@ -15,60 +15,62 @@ import { add, v, type V3 } from '../vec'
  * em z = ±30 (a barra é rígida: a distância entre as mãos é a mesma em todas as poses). Até a extensão as mãos
  * vêm de `hang()` (braços estendidos); da puxada alta em diante, de pontos relativos ao ombro.
  *
+ * As poses e verificações da puxada são exportadas: o clean completo (clean.ts) usa as mesmas.
+ *
  * Simplificações conscientes: (1) o encolhimento dos ombros (passo 3) não existe no esqueleto; (2) os pés não
  * saem do chão nem abrem no encaixe (no movimento real eles "pulam" para a base de agachamento).
  */
 
 const GRIP_Z = 30
 const BAR_X = 7 // sobre o meio do pé
-const flat = both(footFlat(0, 11, -6), mirrorFoot)
+export const flat = both(footFlat(0, 11, -6), mirrorFoot)
 const toes = (lift: number): Record<Side, Foot> => both(footOnToes(0, 11, lift, -6), mirrorFoot)
 // braços estendidos: cotovelos para trás; puxada alta: para cima e para fora; encaixe: à frente (sob a barra)
 const POLE_BACK = both(v(-1, 0, 0.3), mirrorZ)
 const POLE_HIGH = both(v(-0.2, 1, 0.9), mirrorZ)
-const POLE_RACK = both(v(1, 0.35, 0.3), mirrorZ)
+export const POLE_RACK = both(v(1, 0.35, 0.3), mirrorZ)
 
 type Base = Omit<PoseSpec, 'hands'>
-const base = (pelvis: V3, pitch: number, head: number, feet: Record<Side, Foot>, elbowPole: Record<Side, V3>): Base => ({ pelvis, pitch, head, feet, elbowPole })
+export const base = (pelvis: V3, pitch: number, head: number, feet: Record<Side, Foot>, elbowPole: Record<Side, V3>): Base => ({ pelvis, pitch, head, feet, elbowPole })
 /** Braços estendidos segurando a barra sobre o meio do pé (como no terra). */
 const hanging = (b: Base, x = BAR_X): PoseSpec => ({ ...b, hands: hang(b, x, GRIP_Z) })
 /** Barra num ponto relativo ao ombro (dx à frente, dy acima), na largura da pegada. */
-const fromShoulder = (b: Base, dx: number, dy: number): PoseSpec => {
+export const fromShoulder = (b: Base, dx: number, dy: number): PoseSpec => {
   const sh = shouldersOf(b).L
   const p = add(sh, v(dx, dy, 0))
   return { ...b, hands: both(v(p[0], p[1], GRIP_Z), mirrorZ) }
 }
 
-/** Barra apoiada nos ombros: punho dobrado para trás sob a barra (ack). */
-const racked = (p: PoseSpec): PoseSpec => ({ ...p, rack: { L: 1, R: 1 } })
+/** Barra apoiada nos ombros: punho dobrado para trás sob a barra (`rack`). */
+export const racked = (p: PoseSpec): PoseSpec => ({ ...p, rack: { L: 1, R: 1 } })
 
 /** Posição inicial: anilhas no chão, ombros um pouco à frente da barra, costas neutras (= terra). */
-const SETUP = hanging(base(v(-30, 60, 0), 58, 10, flat, POLE_BACK))
+export const SETUP = hanging(base(v(-30, 60, 0), 58, 10, flat, POLE_BACK))
 /** Barra passando o joelho: o quadril sobe junto com os ombros (= terra). */
-const KNEE = hanging(base(v(-25.6, STAND_Y - 10.4, 0), 45, 8, flat, POLE_BACK))
+export const KNEE = hanging(base(v(-25.6, STAND_Y - 10.4, 0), 45, 8, flat, POLE_BACK))
 /** Barra no meio da coxa ("posição de potência"): joelhos voltam a dobrar por baixo da barra, tronco mais vertical. */
-const MID_THIGH = hanging(base(v(-11, STAND_Y - 8, 0), 20, 4, flat, POLE_BACK))
+export const MID_THIGH = hanging(base(v(-11, STAND_Y - 8, 0), 20, 4, flat, POLE_BACK))
 /** Extensão (passo 3): quadril e joelhos estendidos na ponta dos pés, tronco levemente para trás, braços soltos. */
-const EXTENSION = hanging(base(v(-1, STAND_Y + 5, 0), -6, -2, toes(9), POLE_BACK), BAR_X + 4)
+export const EXTENSION = hanging(base(v(-1, STAND_Y + 5, 0), -6, -2, toes(9), POLE_BACK), BAR_X + 4)
 /** Puxada alta (passo 4): cotovelos altos e por fora, barra subindo rente ao peito, ainda na ponta dos pés. */
-const HIGH_PULL = fromShoulder(base(v(-2, STAND_Y + 2, 0), -4, -2, toes(6), POLE_HIGH), 15, -20)
+export const HIGH_PULL = fromShoulder(base(v(-2, STAND_Y + 2, 0), -4, -2, toes(6), POLE_HIGH), 15, -20)
 /** Encaixe (passo 5): barra apoiada na frente dos ombros, cotovelos à frente, agachamento frontal alto. */
 const CATCH = racked(fromShoulder(base(v(-13, STAND_Y - 24, 0), 12, 2, flat, POLE_RACK), 12, 1))
 /** Em pé com a barra nos ombros. */
-const STAND = racked(fromShoulder(base(v(-2, STAND_Y - 0.3, 0), 2, 0, flat, POLE_RACK), 12, 1))
+export const STAND = racked(fromShoulder(base(v(-2, STAND_Y - 0.3, 0), 2, 0, flat, POLE_RACK), 12, 1))
 
-const fmt = (n: number) => n.toFixed(1).replace('.', ',')
+export const fmt = (n: number) => n.toFixed(1).replace('.', ',')
 /** Barra (meio das mãos) em relação ao ombro esquerdo/direito médio: [à frente, acima]. */
 const barVsShoulder = (s: Skeleton) => {
   const b = midHands(s)
   const sh = [(s.shoulder.L[0] + s.shoulder.R[0]) / 2, (s.shoulder.L[1] + s.shoulder.R[1]) / 2]
   return [b[0] - sh[0], b[1] - sh[1]] as const
 }
-const barOnShoulders = (s: Skeleton) => {
+export const barOnShoulders = (s: Skeleton) => {
   const [dx, dy] = barVsShoulder(s)
   return (dx >= 4 && dx <= 18 && dy >= -6 && dy <= 5) || `barra ${fmt(dx)} cm à frente e ${fmt(dy)} cm acima dos ombros (esperado 4–18 à frente, −6 a 5)`
 }
-const STRAIGHT_ARMS = ['Posição inicial', 'Barra no joelho', 'Barra no meio da coxa', 'Extensão']
+export const STRAIGHT_ARMS = ['Posição inicial', 'Barra no joelho', 'Barra no meio da coxa', 'Extensão']
 
 export const powerClean: ExerciseSpec = {
   id: 'lpo-power-clean',
