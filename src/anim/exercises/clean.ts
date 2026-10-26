@@ -3,7 +3,7 @@ import { lib } from '../checks'
 import type { ExerciseSpec } from '../spec'
 import { type PoseSpec } from '../pose'
 import { sub, unit, v } from '../vec'
-import { barOnShoulders, base, catchFeet, EXTENSION, fmt, forearmsHanging, forearmsUp, fromShoulder, highPull, KNEE, MID_THIGH, POLE_RACK, RACK, racked, SETUP, STAND, STRAIGHT_ARMS, turnover, UNRACK } from './power-clean'
+import { barOnShoulders, base, catchFeet, EXTENSION, fmt, forearmsUp, JUMP_CHECKS, jump, fromShoulder, KNEE, MID_THIGH, POLE_RACK, RACK, racked, SETUP, STAND, STRAIGHT_ARMS, turnover, UNRACK } from './power-clean'
 
 /*
  * Clean completo (arremesso do chão, LPO): mesma puxada do power clean (power-clean.ts), mas a barra é recebida
@@ -20,15 +20,14 @@ const K = (p: PoseSpec): PoseSpec => ({ ...p, kneePole: { L: unit(sub(p.feet.L.t
 /** Encaixe no fundo: quadril abaixo dos joelhos, tronco quase vertical, cotovelos altos à frente, barra nos ombros,
  * base aberta (pontas e joelhos para fora), queixo para cima (a barra no deltoide fica logo abaixo do queixo). */
 const CATCH_DEEP = K(racked(fromShoulder(base(v(-18, 41, 0), 18, -14, catchFeet, POLE_RACK), RACK.dx + 5, RACK.dy)))
-// Altura da barra (cm): ~106 na puxada alta (braço perpendicular ao tronco, antebraço pendurado), pico ~110
-// enquanto os cotovelos giram para a frente e o corpo mergulha, pousa nos ombros (~108) num agachamento parcial
-// e DESCE com o atleta até o fundo (~91 cm): é o "ajuste de altura" da recepção. A barra quase não se mexe;
-// quem entra por baixo dela é o corpo.
-const HIGH_PULL = K(highPull())
-/** Passagem por baixo da barra: barra parada no alto, cotovelos girando para a frente. */
-const TURNOVER = K(turnover(110))
-/** Encontro com a barra: ela pousa nos ombros num agachamento parcial, logo abaixo do pico. */
-const MEET = K(racked(fromShoulder(base(v(-14, 57.4, 0), 13, -14, catchFeet, POLE_RACK), RACK.dx + 5, RACK.dy)))
+// Altura da barra (cm): ~92 no saltinho (braços quase estendidos), sobe pela inércia até ~104 enquanto o corpo
+// cai por baixo, pousa nos ombros (~103) já agachando e DESCE com o atleta até o fundo (~91): é o "ajuste de
+// altura" da recepção. Quem se mexe é o corpo; a barra quase não sobe depois do saltinho.
+const JUMP = K(jump())
+/** Passagem por baixo da barra: barra no pico, o corpo caindo; os cotovelos dobram porque o ombro desce. */
+const TURNOVER = K(turnover(104, 20))
+/** Encontro com a barra: ela pousa nos ombros num agachamento já fundo, logo abaixo do pico. */
+const MEET = K(racked(fromShoulder(base(v(-16, 51.2, 0), 13, -14, catchFeet, POLE_RACK), RACK.dx + 5, RACK.dy)))
 export const clean: ExerciseSpec = {
   id: 'lpo-clean-chao',
   datasetId: 'lpo-clean-chao',
@@ -36,8 +35,8 @@ export const clean: ExerciseSpec = {
   camera: { yaw: 35, pitch: 8 },
   phases: [
     { name: 'Primeira puxada', description: 'Empurra o chão com as pernas; a barra sobe rente às canelas até o meio da coxa, braços estendidos.' },
-    { name: 'Segunda puxada', description: 'Explode o quadril para a frente e sobe na ponta dos pés; os braços continuam soltos.' },
-    { name: 'Encaixe', description: 'Puxa os cotovelos para cima e mergulha por baixo da barra, recebendo-a nos ombros no fundo do agachamento frontal.' },
+    { name: 'Segunda puxada', description: 'Explode o quadril para a frente, sobe na ponta dos pés e dá um saltinho; os braços continuam quase estendidos.' },
+    { name: 'Encaixe', description: 'Com a barra subindo pela inércia, mergulha por baixo dela: os cotovelos dobram abrindo e giram para a frente; recebe a barra nos ombros e desce com ela até o fundo do agachamento frontal.' },
     { name: 'Recuperação', description: 'Sobe do agachamento frontal com a barra nos ombros e os cotovelos altos.' },
     { name: 'Retorno', description: 'Desce a barra pela frente das pernas até o joelho e depois ao chão.' },
   ],
@@ -45,7 +44,8 @@ export const clean: ExerciseSpec = {
     'Barra sobre o meio do pé e rente ao corpo na puxada',
     'Braços estendidos até a extensão completa (quem puxa são as pernas e o quadril)',
     'Extensão completa: quadril e joelhos estendidos, na ponta dos pés',
-    'Cotovelos altos e por fora na puxada alta',
+    'Saltinho na ponta dos pés com os braços quase estendidos: a barra sobe pelo empurrão das pernas, não pelos braços',
+    'Os cotovelos só dobram quando o corpo entra por baixo da barra',
     'Recepção no fundo do agachamento frontal: quadril abaixo dos joelhos, tronco quase vertical',
     'Cotovelos à frente e barra apoiada nos ombros do encaixe até ficar em pé',
   ],
@@ -57,15 +57,16 @@ export const clean: ExerciseSpec = {
     { phase: 'Retorno', primary: ['posteriores', 'gluteos'], secondary: ['eretores', 'antebraco'] },
   ],
   muscleSource:
-    'NSCA — Essentials of Strength Training and Conditioning, 4ª ed. (Haff & Triplett, 2016), cap. 15, power clean e agachamento frontal (extensores de quadril, joelho e tornozelo; trapézio e deltoides na puxada alta; quadríceps e glúteos na subida do agachamento). Distribuição por fase a validar na revisão.',
+    'NSCA — Essentials of Strength Training and Conditioning, 4ª ed. (Haff & Triplett, 2016), cap. 15, power clean e agachamento frontal (extensores de quadril, joelho e tornozelo; trapézio e deltoides ao entrar sob a barra; quadríceps e glúteos na subida do agachamento). Distribuição por fase a validar na revisão.',
   props: [{ kind: 'barbell' }],
   // o fundo do agachamento é a pose do meio (miniatura do app); a barra no joelho fecha o ciclo
   frames: [
     { name: 'Barra no meio da coxa', pose: K(MID_THIGH), moveMs: 320, holdMs: 0, phase: 'Primeira puxada', ease: 'linear', handPath: 'shoulder' },
     { name: 'Extensão', pose: K(EXTENSION), moveMs: 260, holdMs: 0, phase: 'Segunda puxada', ease: 'linear', handPath: 'shoulder' },
-    { name: 'Puxada alta', pose: HIGH_PULL, moveMs: 200, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
-    { name: 'Passagem por baixo da barra', pose: TURNOVER, moveMs: 180, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
-    { name: 'Encontro com a barra', pose: MEET, moveMs: 340, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
+    { name: 'Saltinho', pose: JUMP, moveMs: 200, holdMs: 0, phase: 'Segunda puxada', ease: 'linear' },
+    // a virada tem o mesmo "câmera lenta" do resto (em tempo real os cotovelos giravam a ~7 m/s, elásticos)
+    { name: 'Passagem por baixo da barra', pose: TURNOVER, moveMs: 360, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
+    { name: 'Encontro com a barra', pose: MEET, moveMs: 680, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
     { name: 'Encaixe no fundo', pose: CATCH_DEEP, moveMs: 650, holdMs: 500, phase: 'Encaixe', ease: 'out' },
     { name: 'Em pé com a barra', pose: K(STAND), moveMs: 1300, holdMs: 500, phase: 'Recuperação', ease: 'inout' },
     { name: 'Barra saindo dos ombros', pose: K(UNRACK), moveMs: 500, holdMs: 0, phase: 'Retorno', ease: 'in' },
@@ -86,7 +87,7 @@ export const clean: ExerciseSpec = {
       },
     },
     { name: 'Joelhos estendidos na extensão', at: { pose: 'Extensão' }, test: lib.knee(160, 180) },
-    { name: 'Antebraços na vertical, pendurados, na puxada alta', at: { pose: 'Puxada alta' }, test: forearmsHanging },
+    ...JUMP_CHECKS,
     { name: 'Antebraços subindo até a barra no encontro', at: { pose: 'Encontro com a barra' }, test: forearmsUp },
     { name: 'Antebraços subindo até a barra no fundo', at: { pose: 'Encaixe no fundo' }, test: forearmsUp },
     { name: 'Antebraços subindo até a barra em pé', at: { pose: 'Em pé com a barra' }, test: forearmsUp },
