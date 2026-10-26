@@ -215,6 +215,32 @@
       }
     ]
   },
+  "lpo-jerk": {
+    "status": "rascunho",
+    "thumb": 3,
+    "stills": [
+      {
+        "src": "anim/lpo-jerk/1.webp",
+        "label": "Barra nos ombros"
+      },
+      {
+        "src": "anim/lpo-jerk/2.webp",
+        "label": "Dip"
+      },
+      {
+        "src": "anim/lpo-jerk/3.webp",
+        "label": "Impulso"
+      },
+      {
+        "src": "anim/lpo-jerk/4.webp",
+        "label": "Recepção em tesoura"
+      },
+      {
+        "src": "anim/lpo-jerk/5.webp",
+        "label": "Em pé com a barra acima da cabeça"
+      }
+    ]
+  },
   "lpo-power-clean": {
     "status": "rascunho",
     "thumb": 3,
