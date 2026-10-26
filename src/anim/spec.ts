@@ -178,6 +178,7 @@ function fullPose(p: PoseSpec, all: PoseSpec[]): PoseSpec {
     head: p.head ?? 0,
     hands: p.hands,
     ...(all.some((q) => q.palms) ? { palms: { L: p.palms?.L ?? 0, R: p.palms?.R ?? 0 } } : {}),
+    ...(all.some((q) => q.rack) ? { rack: { L: p.rack?.L ?? 0, R: p.rack?.R ?? 0 } } : {}),
     feet: { L: foot('L'), R: foot('R') },
     ...(all.some((q) => q.elbowPole) ? { elbowPole: poles((q) => q.elbowPole) } : {}),
     ...(all.some((q) => q.kneePole) ? { kneePole: poles((q) => q.kneePole) } : {}),

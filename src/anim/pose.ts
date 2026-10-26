@@ -42,6 +42,12 @@ export interface PoseSpec {
    * 0/ausente = mão em linha com o antebraço. Valores intermediários na transição.
    */
   palms?: Partial<Record<Side, number>>
+  /**
+   * Barra apoiada na frente dos ombros (encaixe do clean, agachamento frontal): 1 = punho dobrado para trás,
+   * 6 cm à frente e 3 cm abaixo da barra, palma para cima sob ela; o centro da mão continua na barra.
+   * 0/ausente = mão em linha com o antebraço. Valores intermediários na transição.
+   */
+  rack?: Partial<Record<Side, number>>
   feet: Record<Side, Foot>
   /** Para onde aponta cada cotovelo/joelho (direção no mundo). Ausente = padrão anatômico. */
   elbowPole?: Partial<Record<Side, V3>>
@@ -168,6 +174,7 @@ export function mirrorPose(p: PoseSpec): PoseSpec {
     feet: { L: foot(p.feet.R), R: foot(p.feet.L) },
     elbowPole: swap(p.elbowPole, mirrorZ) as PoseSpec['elbowPole'],
     kneePole: swap(p.kneePole, mirrorZ) as PoseSpec['kneePole'],
+    ...(p.rack ? { rack: { L: p.rack.R, R: p.rack.L } } : {}),
   }
 }
 
@@ -179,6 +186,9 @@ export const both = <T>(left: T, mirror: (t: T) => T): Record<Side, T> => ({ L: 
 export const mirrorFoot = (f: Foot): Foot => ({ ankle: mirrorZ(f.ankle), toe: mirrorZ(f.toe) })
 
 const sideSign = (s: Side) => (s === 'L' ? 1 : -1)
+
+/** Punho em relação à barra com ela apoiada nos ombros (`rack`), cm. */
+const RACK_WRIST = { fwd: 6, down: 3 }
 
 /** Monta o esqueleto de uma pose. */
 export function solve(p: PoseSpec): Skeleton {
@@ -227,8 +237,20 @@ export function solve(p: PoseSpec): Skeleton {
     const toHand = unit(sub(armIk.tip, armIk.mid))
     out.shoulder[s] = shoulder
     const w = Math.min(1, Math.max(0, p.palms?.[s] ?? 0))
+    const r = Math.min(1, Math.max(0, p.rack?.[s] ?? 0))
     palm[s] = w
-    if (w === 0) {
+    if (r > 0 && w === 0) {
+      // barra nos ombros: punho à frente e abaixo da barra (mão dobrada para trás, dedos para o atleta);
+      // o braço (ombro → cotovelo → punho) alcança o punho; o centro da mão fica na barra
+      const fwdH = unit(len(reject(front, v(0, 1, 0))) >= 0.5 ? reject(front, v(0, 1, 0)) : v(1, 0, 0))
+      const wristRack = add(add(p.hands[s], mul(fwdH, RACK_WRIST.fwd)), v(0, -RACK_WRIST.down, 0))
+      const wristLine = add(armIk.mid, mul(toHand, SEG.forearm))
+      const wristIk = ik2(shoulder, lerp3(wristLine, wristRack, r), ARM.a, SEG.forearm, elbowPole)
+      out.elbow[s] = wristIk.mid
+      out.wrist[s] = wristIk.tip
+      out.hand[s] = lerp3(armIk.tip, p.hands[s], r)
+      reachError.hand[s] = wristIk.error + (1 - r) * armIk.error
+    } else if (w === 0) {
       out.elbow[s] = armIk.mid
       out.wrist[s] = add(armIk.mid, mul(toHand, SEG.forearm))
       out.hand[s] = armIk.tip
@@ -277,6 +299,7 @@ export function mixPose(a: PoseSpec, b: PoseSpec, t: number): PoseSpec {
     head: lerp(a.head ?? 0, b.head ?? 0, t),
     hands: sidesLerp(a.hands, b.hands, (x, y) => lerp3(x, y, t)),
     ...(a.palms || b.palms ? { palms: { L: lerp(a.palms?.L ?? 0, b.palms?.L ?? 0, t), R: lerp(a.palms?.R ?? 0, b.palms?.R ?? 0, t) } } : {}),
+    ...(a.rack || b.rack ? { rack: { L: lerp(a.rack?.L ?? 0, b.rack?.L ?? 0, t), R: lerp(a.rack?.R ?? 0, b.rack?.R ?? 0, t) } } : {}),
     feet: sidesLerp(a.feet, b.feet, (x, y) => ({
       ankle: lerp3(x.ankle, y.ankle, t),
       toe: lerp3(x.toe, y.toe, t),
