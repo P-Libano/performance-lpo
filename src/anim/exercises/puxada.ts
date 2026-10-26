@@ -24,10 +24,11 @@ const elbowPole = both(v(-0.25, -1, 0.9), mirrorZ)
 
 const body = (pitch: number, head: number) => ({ pelvis: PELVIS, pitch, head, feet, elbowPole })
 
-// Embaixo: barra na parte alta do peito (12 cm abaixo da linha dos ombros, 10 cm à frente do eixo do tronco).
+// Embaixo: barra na parte alta do peito (12 cm abaixo da linha dos ombros, 15 cm à frente do eixo do tronco:
+// no corpo MakeHuman o peitoral fica ~13 cm à frente do eixo nessa altura; a barra encosta sem entrar).
 const LOW = body(-18, -6)
 const lowSk = solve({ ...LOW, hands: { L: PELVIS, R: PELVIS } })
-const BAR_LOW = add(add(lowSk.chest, mul(lowSk.up, -12)), mul(lowSk.front, 10))
+const BAR_LOW = add(add(lowSk.chest, mul(lowSk.up, -12)), mul(lowSk.front, 15))
 /** a barra corre numa vertical (cabo a prumo sob a roldana) */
 const BAR_X = BAR_LOW[0]
 const PULLEY = v(BAR_X, 232, 0)

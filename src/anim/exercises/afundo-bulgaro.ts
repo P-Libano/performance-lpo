@@ -26,7 +26,8 @@ const REAR: Side = 'R'
 const frontFoot = footFlat(0, 10, 0)
 /** peito do pé no banco: tornozelo ~5 cm acima do tampo, dedos para trás encostados no tampo */
 const rearFoot: Foot = { ankle: v(-70, BENCH_TOP + 5, -10), toe: v(-90, BENCH_TOP + 0.5, -10), sole: v(0, 1, 0) }
-const HAND_Z = 24
+/** halter afastado da coxa: anilha de raio 10 por fora da coxa do corpo MakeHuman (≈ ±19 cm no fundo) */
+const HAND_Z = 30
 
 const pose = (pelvis: V3, pitch: number): PoseSpec => {
   const base = {

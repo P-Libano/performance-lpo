@@ -16,8 +16,9 @@ import { add, angle, mul, reject, unit, v, type V3 } from '../vec'
 const feet = both(footFlat(0, 12, -8), mirrorFoot)
 const base = { pelvis: v(0, STAND_Y - 0.25, 0), pitch: 0, head: 0, feet }
 const SHOULDER = solve({ ...base, hands: { L: base.pelvis, R: base.pelvis } } as PoseSpec).shoulder.L
-// braço parado: quase vertical, levemente para fora (o halter não bate na coxa) e um nada à frente
-const UPPER = unit(v(0.04, -1, 0.14))
+// braço parado: quase vertical, ~13° para fora (embaixo, a ponta de dentro do halter, 15 cm para dentro da mão,
+// passa por fora da coxa do corpo MakeHuman) e um nada à frente
+const UPPER = unit(v(0.04, -1, 0.23))
 const ELBOW = add(SHOULDER, mul(UPPER, SEG.upperArm))
 // direção "para a frente" no plano em que o antebraço gira
 const FWD = unit(reject(v(1, 0, 0), UPPER))

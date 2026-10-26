@@ -43,7 +43,7 @@ function hangFrom(px: number, pitch: number, head: number, straight = 0.996): Po
 /** Pendurado: braços estendidos, corpo quase vertical sob a barra. */
 const BOTTOM = hangFrom(0, -4, 0)
 /** Topo: queixo acima da barra, peito perto dela, tronco levemente inclinado para trás. */
-const TOP: PoseSpec = { ...body(v(2, BAR.y - 54.7, 0), -15, -5), hands: HANDS }
+const TOP: PoseSpec = { ...body(v(-4, BAR.y - 54.7, 0), -15, -5), hands: HANDS }
 
 /** Queixo: abaixo e um pouco à frente do centro da cabeça. */
 const chinY = (s: { head: V3 }) => s.head[1] - 0.7 * SEG.headRadius
@@ -92,7 +92,8 @@ export const barraFixa: ExerciseSpec = {
       at: 'all',
       test: (s) => {
         const d = Math.hypot(s.head[0] - BAR.x, s.head[1] - BAR.y)
-        const min = SEG.headRadius + 1.5
+        // rosto (nariz) do corpo MakeHuman chega a ~14,5 cm do centro da cabeça; + raio da barra + 0,5 de folga
+        const min = SEG.headRadius + 6
         return (d >= min && (s.head[1] < BAR.y || s.head[0] < BAR.x)) || `cabeça a ${d.toFixed(1)} cm do eixo da barra (mín. ${min.toFixed(1)}, por trás)`
       },
     },
