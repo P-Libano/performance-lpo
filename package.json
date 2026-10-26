@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "anim:sheet": "node scripts/anim-sheet.mjs"
+    "anim:sheet": "node scripts/anim-sheet.mjs",
+    "anim:stills": "node scripts/anim-stills.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",

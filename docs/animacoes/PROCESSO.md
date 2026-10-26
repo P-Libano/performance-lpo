@@ -179,6 +179,9 @@ volte o status para `verificado` (o GIF do dataset reaparece).
    **olhe a imagem** comparando com o GIF do dataset. A folha é onde aparecem pose estranha, câmera ruim e
    aparelho tapando o movimento.
 7. Ajuste e repita 5–6. Com tudo certo, `review.status = 'verificado'` e peça a revisão humana (etapa 4).
+   Gere as imagens do app no corpo 3D: `npm run anim:stills -- <id>` (uma por fase; escolha as poses em
+   `stills`, senão vale a regra de `stillFrames`). Refaça sempre que mudar a animação ou o status de revisão:
+   o teste `stills.test.ts` acusa imagens velhas. O app só mostra as imagens de exercício `revisado`.
 8. **Não faça commit nem `git add`**: quem coordena revisa e faz o commit.
 
 ### Câmera
@@ -233,6 +236,7 @@ impede a técnica correta.
 | Testes do motor e dos exercícios | `src/anim/*.test.ts` |
 | Folhas de contato (revisão) | `docs/animacoes/folhas/` (`npm run anim:sheet -- <id> [--zoom 2]`) |
 | Estúdio de revisão | rota `/#/estudio` (só em desenvolvimento) |
+| Imagens do app (corpo 3D) | `public/anim/<id>/` + `src/anim/stills.json` (`npm run anim:stills -- <id>`; renderizador em `tools/render3d/`) |
 
 ## Definição de pronto (por exercício)
 

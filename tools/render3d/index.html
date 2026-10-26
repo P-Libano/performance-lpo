@@ -1,0 +1,868 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Progressa MakeHuman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f0ed; --card: #ffffff; --card-line: rgba(20, 22, 28, 0.06);
+    --stage-a: #faf9f7; --stage-b: #e9e6e1;
+    --text: #15171c; --muted: #6d717a; --faint: #a3a6ad; --track: #ebe8e4;
+    --coral: #ff4b3a; --coral-soft: #ffb4a8; --chip: #fff0ee; --chip-text: #c8321f; --chip2: #f6f3f0; --chip2-text: #5a5e66;
+    --glass: rgba(255, 255, 255, 0.72); --glass-line: rgba(20, 22, 28, 0.06);
+    --shadow: 0 1px 2px rgba(20, 22, 28, 0.04), 0 12px 32px -12px rgba(20, 22, 28, 0.16);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0c0d10; --card: #16181d; --card-line: rgba(255, 255, 255, 0.06); --stage-a: #23262d; --stage-b: #121418;
+      --text: #f3f3f4; --muted: #9a9ea8; --faint: #5d616b; --track: #262930; --chip: rgba(255, 75, 58, 0.14); --chip-text: #ff8a7c;
+      --chip2: #20232a; --chip2-text: #b8bcc5; --glass: rgba(22, 24, 29, 0.66); --glass-line: rgba(255, 255, 255, 0.08);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 40px -16px rgba(0, 0, 0, 0.7); color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0c0d10; --card: #16181d; --card-line: rgba(255, 255, 255, 0.06); --stage-a: #23262d; --stage-b: #121418;
+    --text: #f3f3f4; --muted: #9a9ea8; --faint: #5d616b; --track: #262930; --chip: rgba(255, 75, 58, 0.14); --chip-text: #ff8a7c;
+    --chip2: #20232a; --chip2-text: #b8bcc5; --glass: rgba(22, 24, 29, 0.66); --glass-line: rgba(255, 255, 255, 0.08);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 40px -16px rgba(0, 0, 0, 0.7); color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--text); font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  header { max-width: 1240px; margin: 0 auto; padding: 22px 16px 6px; display: flex; align-items: center; gap: 12px; }
+  .brand { display: flex; flex-direction: column; gap: 2px; margin-right: auto; }
+  .brand small { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--coral); }
+  .brand h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .toggle { appearance: none; border: 1px solid var(--card-line); background: var(--card); color: var(--text); width: 44px; height: 44px; border-radius: 999px; display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow); }
+  .toggle svg { width: 20px; height: 20px; }
+  .toggle .moon { display: none; }
+  :root[data-theme="dark"] .toggle .sun { display: none; }
+  :root[data-theme="dark"] .toggle .moon { display: block; }
+  main { max-width: 1240px; margin: 0 auto; padding: 14px 16px 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  @media (max-width: 700px) { main { grid-template-columns: minmax(0, 1fr); } }
+  main.single { grid-template-columns: minmax(300px, 760px); justify-content: center; }
+  .card { background: var(--card); border: 1px solid var(--card-line); border-radius: 26px; box-shadow: var(--shadow); overflow: hidden; }
+  .card.big { grid-column: 1 / -1; }
+  .card.big .stage { aspect-ratio: 16 / 10; }
+  .stage { position: relative; aspect-ratio: 1 / 1; background: linear-gradient(180deg, var(--stage-a) 0%, var(--stage-b) 100%); }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .phase, .look { position: absolute; top: 12px; display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px 7px 10px; border-radius: 999px; background: var(--glass); border: 1px solid var(--glass-line); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font-size: 12.5px; font-weight: 600; }
+  .phase { left: 12px; }
+  .look { right: 12px; color: var(--muted); font-weight: 500; padding: 7px 12px; }
+  .phase i { width: 7px; height: 7px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 3px rgba(255, 75, 58, .18); }
+  .phys { position: absolute; left: 12px; bottom: 12px; right: 12px; padding: 6px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; background: var(--glass); border: 1px solid var(--glass-line); }
+  .phys.ok { color: #1f8a4c; } .phys.bad { color: var(--chip-text); }
+  .body { padding: 14px 18px 18px; }
+  .title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .title h2 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -0.015em; line-height: 1.25; }
+  .title span { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .timeline { display: flex; gap: 4px; margin: 12px 0 14px; }
+  .seg { height: 4px; border-radius: 4px; background: var(--track); overflow: hidden; position: relative; }
+  .seg b { position: absolute; inset: 0; width: 0; background: var(--text); opacity: .85; border-radius: 4px; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 7px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; background: var(--chip); color: var(--chip-text); }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--coral); }
+  .chip.sec { background: var(--chip2); color: var(--chip2-text); font-weight: 500; }
+  .chip.sec::before { background: var(--coral-soft); }
+  .sec-wrap { margin-top: 10px; }
+  footer { max-width: 1240px; margin: 0 auto; padding: 0 16px 32px; color: var(--faint); font-size: 12px; text-align: center; line-height: 1.5; }
+  .err { padding: 24px; color: var(--muted); font-size: 14px; }
+  /* ?bare: só o palco, quadrado, para gerar as imagens do app (scripts/anim-stills.mjs) */
+  body.bare header, body.bare footer, body.bare .body, body.bare .phase, body.bare .look, body.bare .phys { display: none !important; }
+  body.bare main { padding: 0; max-width: none; display: block; }
+  body.bare .card { border: 0; border-radius: 0; box-shadow: none; }
+  body.bare .stage { width: var(--bare-size, 640px); height: var(--bare-size, 640px); aspect-ratio: auto; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script src="anim-engine.js"></script>
+<script src="body-data.js"></script>
+<script src="rig.js"></script>
+</head>
+<body>
+<header>
+  <div class="brand"><small>Progressa · prova de conceito</small><h1>Corpo MakeHuman dirigido pelo motor</h1></div>
+  <button class="toggle" id="theme" aria-label="Alternar tema claro/escuro" title="Tema claro/escuro">
+    <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>
+    <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+  </button>
+</header>
+<main id="grid"></main>
+<footer>Malha, targets, esqueleto e pesos: MakeHuman 1.x (assets CC0). Máscaras musculares, sulcos e retarget: gerados para este estudo.</footer>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+MHRig.init(THREE);
+const Anim = globalThis.Anim;
+const DATA = globalThis.MH_BODY;
+const params = new URLSearchParams(location.search);
+const FREEZE = params.has('t') ? Number(params.get('t')) : null;
+const DEBUG = params.has('debug');
+const REST = params.has('rest');
+const ALLM = params.get('muscles');
+const NOCLEAR = params.has('noclear'); // 'all' = destaca todos (validação)
+// cartões: id:look[:big]
+// cartão com quadro fixo: id:look@t (t em ms) ou id:look@f0.25 (fração do ciclo)
+const CARDS = (params.get('cards') || '0032:neutro:big,0032:skin,1160:neutro,0025:neutro,1160:clay').split(',').map((c) => { const [main, at] = c.split('@'); const [id, look, big] = main.split(':'); return { id, look: look || 'neutro', big: big === 'big', at: at ?? null }; });
+const COLS = params.get('cols');
+if (params.has('bare')) { document.body.classList.add('bare'); document.body.style.setProperty('--bare-size', (Number(params.get('size')) || 640) + 'px'); }
+
+// ───────── tema ─────────
+const root = document.documentElement;
+const mq = matchMedia('(prefers-color-scheme: dark)');
+let stored = null;
+try { stored = localStorage.getItem('pmh-theme'); } catch (e) {}
+const initial = params.get('theme') || stored || (mq.matches ? 'dark' : 'light');
+const isDark = () => root.dataset.theme === 'dark';
+function setTheme(t) { root.dataset.theme = t; try { localStorage.setItem('pmh-theme', t); } catch (e) {} for (const c of cards) c.applyTheme?.(); }
+document.getElementById('theme').addEventListener('click', () => setTheme(isDark() ? 'light' : 'dark'));
+
+// ───────── vetores ─────────
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const mul = (a, k) => [a[0] * k, a[1] * k, a[2] * k];
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const len = (a) => Math.hypot(a[0], a[1], a[2]);
+const unit = (a) => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+const lerp = (a, b, t) => add(a, mul(sub(b, a), t));
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+
+// ───────── dados do corpo ─────────
+const dec = (b64, T) => { const bin = atob(b64); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return new T(u8.buffer); };
+const N = DATA.n;
+const POS = dec(DATA.pos, Float32Array);
+const IDX = dec(DATA.idx, DATA.idx16 ? Uint16Array : Uint32Array);
+const CAV = dec(DATA.cav, Int8Array);
+const SKI = dec(DATA.skinI, Uint8Array);
+const SKW = dec(DATA.skinW, Uint8Array);
+const GROOVE = dec(DATA.groove, Uint8Array);
+const PERP = dec(DATA.fiber, Int8Array);
+const MASKS = dec(DATA.masks, Uint8Array);
+const NM = DATA.maskIds.length;
+const MID = Object.fromEntries(DATA.maskIds.map((k, i) => [k, i]));
+const LABEL = dec(DATA.debugLabel, Uint8Array);
+
+const baseGeo = new THREE.BufferGeometry();
+baseGeo.setAttribute('position', new THREE.BufferAttribute(POS, 3));
+baseGeo.setIndex(new THREE.BufferAttribute(IDX, 1));
+baseGeo.computeVertexNormals();
+baseGeo.setAttribute('skinIndex', new THREE.BufferAttribute(SKI, 4));
+baseGeo.setAttribute('skinWeight', new THREE.BufferAttribute(SKW, 4, true));
+baseGeo.setAttribute('groove', new THREE.BufferAttribute(GROOVE, 1, true));
+baseGeo.setAttribute('perp', new THREE.BufferAttribute(PERP, 3, true));
+baseGeo.setAttribute('restPos', new THREE.BufferAttribute(POS, 3));
+baseGeo.setAttribute('cav', new THREE.BufferAttribute(CAV, 1, true));
+if (DEBUG) {
+  const col = new Float32Array(N * 3);
+  const c = new THREE.Color();
+  for (let i = 0; i < N; i++) {
+    const l = LABEL[i];
+    if (l === 0) c.set('#d8d2c9'); else c.setHSL(((l * 0.61803) % 1), 0.75, 0.52);
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  }
+  baseGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+}
+
+// ───────── materiais ─────────
+const LOOKS = {
+  clay: { color: '#ddd6cc', roughness: 0.6, sheen: 0.25, sheenColor: '#ffffff', clearcoat: 0.06, groove: 0.30, cav: 0.42, label: 'Clay' },
+  skin: { color: '#c79478', roughness: 0.48, sheen: 0.35, sheenColor: '#ffcfb5', clearcoat: 0.12, groove: 0.26, cav: 0.38, label: 'Pele' },
+  neutro: { color: '#b4b8be', roughness: 0.55, sheen: 0.3, sheenColor: '#ffffff', clearcoat: 0.08, groove: 0.28, cav: 0.4, label: 'Neutro' },
+};
+// Roupa: região do corpo em REPOUSO (cm; x = frente, y = altura, z = lado) pintada no shader, com o tecido 0,5 cm
+// acima da pele. ?shorts=0 desliga. Personalizável por URL (base para o app deixar o usuário escolher):
+//   ?outfit=shorts|singlet   (padrão: macaquinho de competição nos LPO, shorts nos demais)
+//   ?suit=#rrggbb            cor do tecido      ?accent=#rrggbb   cor do friso lateral do macaquinho
+const SHORTS = params.get('shorts') !== '0';
+const OUTFITS = { shorts: { suit: '#262a31', accent: null }, singlet: { suit: '#1d2433', accent: '#ff4b3a' } };
+const outfitFor = (spec) => {
+  const kind = params.get('outfit') || (spec.id.startsWith('lpo-') ? 'singlet' : 'shorts');
+  const base = OUTFITS[kind] || OUTFITS.shorts;
+  return { kind: OUTFITS[kind] ? kind : 'shorts', suit: params.get('suit') || base.suit, accent: params.get('accent') || base.accent || base.suit };
+};
+const SHORTS_GLSL = `
+uniform float uOutfit; // 0 = shorts, 1 = macaquinho
+float shortsD(vec3 r) {
+  float az = abs(r.z);
+  float waist = 100.0 + 2.5 * smoothstep(0.0, -12.0, r.x);   // cós um pouco mais alto atrás
+  float hem = 68.5 + 0.3 * max(0.0, az - 9.0);               // barra sobe para o lado de fora
+  return min(min(r.y - hem, waist - r.y), 28.0 - az);         // > 0 dentro do shorts
+}
+// macaquinho de competição (referência: foto do arranco): perna cavada, tronco até o peito com decote mais baixo
+// na frente e cava abaixo da axila (y ~128), alças de 6 cm por cima dos ombros (topo do ombro y ~148, z ~10)
+float singletD(vec3 r) {
+  float az = abs(r.z);
+  float hem = 72.0 + 0.45 * max(0.0, az - 9.0);              // perna mais cavada que o shorts
+  float topFront = 129.0 - 0.055 * az * az;                  // decote: 129 no meio, ~117 na lateral
+  float topBack = 132.0 - 0.045 * az * az;                   // costas um pouco mais altas
+  float top = mix(topBack, topFront, smoothstep(-4.0, 4.0, r.x));
+  float panel = min(min(r.y - hem, top - r.y), 21.5 - az);
+  float strap = min(min(3.0 - abs(az - 11.0), 151.0 - r.y), r.y - 112.0);
+  return max(panel, strap);
+}
+float clothD(vec3 r) { return uOutfit > 0.5 ? singletD(r) : shortsD(r); }`;
+function bodyMaterial(look, outfit = { kind: 'shorts', suit: OUTFITS.shorts.suit, accent: OUTFITS.shorts.suit }) {
+  const L = LOOKS[look];
+  const m = new THREE.MeshPhysicalMaterial({ color: DEBUG ? '#ffffff' : L.color, vertexColors: DEBUG, roughness: L.roughness, metalness: 0, sheen: L.sheen, sheenRoughness: 0.7, sheenColor: new THREE.Color(L.sheenColor), clearcoat: L.clearcoat, clearcoatRoughness: 0.55 });
+  const U = { uPri: { value: new THREE.Color('#e3150b') }, uSec: { value: new THREE.Color('#f39a86') }, uGroove: { value: L.groove }, uCav: { value: L.cav }, uShorts: { value: SHORTS && !DEBUG ? 1 : 0 }, uShortCol: { value: new THREE.Color(outfit.suit) }, uAccent: { value: new THREE.Color(outfit.accent) }, uOutfit: { value: outfit.kind === 'singlet' ? 1 : 0 } };
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, U);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', `#include <common>
+attribute vec2 act; attribute float groove; attribute vec3 perp; attribute vec3 restPos; attribute float cav;
+varying vec2 vAct; varying float vGroove; varying vec3 vPerp; varying vec3 vRest; varying float vCav;
+uniform float uShorts;
+${SHORTS_GLSL}`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+vAct = act; vGroove = groove; vPerp = perp; vRest = restPos; vCav = cav;
+transformed += objectNormal * 0.5 * uShorts * smoothstep(-0.6, 0.6, clothD(restPos)); // tecido sobre a pele`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+uniform vec3 uPri; uniform vec3 uSec; uniform float uGroove; uniform float uCav; uniform float uShorts; uniform vec3 uShortCol; uniform vec3 uAccent;
+varying vec2 vAct; varying float vGroove; varying vec3 vPerp; varying vec3 vRest; varying float vCav;
+float vShort = 0.0;
+${SHORTS_GLSL}`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+roughnessFactor = mix(roughnessFactor, 0.82, vShort);`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+{
+  vec3 pp = normalize(vPerp + vec3(1e-4));
+  float ph = dot(vRest, pp) * 7.2 + 1.6 * sin(dot(vRest, vec3(0.31, 0.17, 0.23)) * 1.3) + 0.8 * sin(dot(vRest, vec3(-0.13, 0.29, 0.11)) * 2.1);
+  float aa = clamp(1.6 - fwidth(ph) * 0.9, 0.0, 1.0); // some quando as fibras ficam menores que ~2 px
+  float fib = 0.5 + 0.5 * sin(ph) * aa;
+  // máscara suave por vértice -> contorno nítido e antisserrilhado (limiar em 0,5)
+  vec2 fw = fwidth(vAct) * 0.8 + 0.03;
+  float w2 = smoothstep(0.5 - fw.x, 0.5 + fw.x, vAct.x);
+  float w1 = smoothstep(0.5 - fw.y, 0.5 + fw.y, vAct.y) * (1.0 - w2);
+  // roupa: borda nítida (fwidth) + barras em faixa mais escura (shorts: barra 1,2 cm e cós 3,6 cm; macaquinho:
+  // acabamento de 1 cm em todas as bordas e friso lateral na cor de destaque)
+  float sd = clothD(vRest);
+  float sfw = fwidth(sd) * 0.9 + 0.02;
+  vShort = uShorts * smoothstep(-sfw, sfw, sd);
+  float toWaist = 100.0 + 2.5 * smoothstep(0.0, -12.0, vRest.x) - vRest.y;
+  float edge = 1.0 - smoothstep((uOutfit > 0.5 ? 1.0 : 1.2) - sfw, (uOutfit > 0.5 ? 1.0 : 1.2) + sfw, sd);
+  float band = uOutfit > 0.5 ? edge : max(edge, 1.0 - smoothstep(3.6 - sfw, 3.6 + sfw, toWaist));
+  vec3 cloth = uShortCol * (1.0 - 0.28 * band);
+  if (uOutfit > 0.5) {
+    // friso lateral: faixa de 2,4 cm descendo pela lateral do corpo (plano x ~ 2,5), da perna até a cava
+    float side = abs(vRest.x - 2.5);
+    float sfw2 = fwidth(side) * 0.9 + 0.02;
+    float stripe = (1.0 - smoothstep(1.2 - sfw2, 1.2 + sfw2, side)) * step(9.0, abs(vRest.z)) * (1.0 - edge);
+    cloth = mix(cloth, uAccent, stripe);
+  }
+  vec3 c = mix(diffuseColor.rgb, cloth, vShort);
+  fib = mix(fib, 0.5, vShort);
+  // sobre o tecido o destaque vira um tom (o shorts continua legível)
+  c = mix(c, uSec * (0.92 + 0.12 * fib) * (1.0 - 0.35 * vShort), w1 * (1.0 - 0.75 * vShort));
+  c = mix(c, uPri * (0.84 + 0.22 * fib) * (1.0 - 0.3 * vShort), w2 * (1.0 - 0.5 * vShort));
+  float w = max(w1, w2);
+  c *= 1.0 - 0.22 * 4.0 * w * (1.0 - w);
+  c *= 1.0 - uGroove * vGroove * (1.0 - 0.75 * vShort);
+  c *= 1.0 - uCav * smoothstep(0.0, 1.0, vCav) + 0.35 * uCav * smoothstep(0.0, 1.0, -vCav);
+  diffuseColor.rgb = c;
+}`);
+  };
+  m.customProgramCacheKey = () => 'mh-' + look + (DEBUG ? '-dbg' : '');
+  return m;
+}
+
+// ───────── renderer ─────────
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' }); }
+catch (e) { document.getElementById('grid').innerHTML = '<div class="err">WebGL indisponível neste navegador.</div>'; throw e; }
+renderer.setPixelRatio(1);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.VSMShadowMap;
+renderer.setClearColor(0x000000, 0);
+const pmrem = new THREE.PMREMGenerator(renderer);
+const ENV = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const MAT = {
+  chrome: new THREE.MeshStandardMaterial({ color: '#d4d7dc', metalness: 1, roughness: 0.22 }),
+  plate: new THREE.MeshPhysicalMaterial({ color: '#2a2d33', metalness: 0.75, roughness: 0.36, clearcoat: 0.3, clearcoatRoughness: 0.4 }),
+  frame: new THREE.MeshStandardMaterial({ color: '#3b3f46', metalness: 0.7, roughness: 0.42 }),
+  pad: new THREE.MeshPhysicalMaterial({ color: '#262b33', roughness: 0.5, metalness: 0, sheen: 0.6, sheenRoughness: 0.5, sheenColor: new THREE.Color('#8a93a3'), clearcoat: 0.25, clearcoatRoughness: 0.5 }),
+  mat: new THREE.MeshPhysicalMaterial({ color: '#37424f', roughness: 0.9, metalness: 0 }),
+  ground: new THREE.ShadowMaterial({ opacity: 0.16 }),
+};
+const blobTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d');
+  const gr = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.35, 'rgba(0,0,0,0.6)'); gr.addColorStop(0.7, 'rgba(0,0,0,0.15)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = gr; x.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
+const blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+
+// ───────── aparelhos (do mock 3D anterior) ─────────
+const Y = new THREE.Vector3(0, 1, 0);
+const GEO = { shaft: new THREE.CylinderGeometry(1.4, 1.4, 1, 24), sleeve: new THREE.CylinderGeometry(2.5, 2.5, 1, 32), collar: new THREE.CylinderGeometry(3.3, 3.3, 2.2, 32), plates: {} };
+const plateGeo = (r, w) => (GEO.plates[r + ':' + w] ||= new THREE.LatheGeometry([[2.6, -w / 2], [4.4, -w / 2], [5.0, -w / 2 + 0.7], [6.2, -w / 2 + 0.7], [6.6, -w / 2 + 1.4], [r - 3.4, -w / 2 + 1.4], [r - 2.4, -w / 2], [r - 0.6, -w / 2], [r, -w / 2 + 0.6], [r, w / 2 - 0.6], [r - 0.6, w / 2], [r - 2.4, w / 2], [r - 3.4, w / 2 - 1.4], [6.6, w / 2 - 1.4], [6.2, w / 2 - 0.7], [5.0, w / 2 - 0.7], [4.4, w / 2], [2.6, w / 2]].map(([a, b]) => new THREE.Vector2(a, b)), 72));
+function makeBarbell(p) {
+  const { halfLength, sleeveFrom, plateRadius, plateWidth } = Anim.DIM.bar;
+  const grp = new THREE.Group(); grp.matrixAutoUpdate = false;
+  const add3 = (geo, mat, y, sy = 1) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; m.scale.y = sy; m.castShadow = true; grp.add(m); return m; };
+  add3(GEO.shaft, MAT.chrome, 0, 2 * sleeveFrom);
+  const plates = [];
+  for (const k of [-1, 1]) {
+    add3(GEO.collar, MAT.chrome, k * (sleeveFrom - 1));
+    add3(GEO.sleeve, MAT.chrome, k * (sleeveFrom + halfLength) / 2, halfLength - sleeveFrom);
+    // ?noplates: esconde as anilhas (inspeção da mão vista de lado)
+    for (let i = 0; i < (p.plates ?? 1); i++) { const r = plateRadius - i * 2.5; const y = k * (sleeveFrom + plateWidth * (i + 0.5) + 0.5); if (!params.has('noplates')) add3(plateGeo(r, plateWidth), MAT.plate, y); plates.push({ y, r }); }
+  }
+  return {
+    obj: grp, plates,
+    update(s) {
+      const c = Anim.midHands(s);
+      let ax = sub(s.hand.L, s.hand.R); ax = len(ax) > 5 ? unit(ax) : [0, 0, 1];
+      const q = new THREE.Quaternion().setFromUnitVectors(Y, new THREE.Vector3(...ax));
+      grp.matrix.compose(new THREE.Vector3(...c), q, new THREE.Vector3(1, 1, 1)); grp.matrixWorldNeedsUpdate = true;
+      this.c = c; this.ax = ax;
+    },
+    contacts() { return this.plates.map((pl) => { const q = add(this.c, mul(this.ax, pl.y)); return { p: q, h: q[1] - pl.r, size: 26, aspect: 0.35, dir: this.ax }; }); },
+  };
+}
+function makeBench(p) {
+  const h = p.height ?? Anim.DIM.bench.height, w = Anim.DIM.bench.halfWidth, pad = Anim.DIM.bench.pad;
+  const grp = new THREE.Group();
+  const seatFrom = p.incline ? p.incline.hingeX : p.x0;
+  const padMesh = new THREE.Mesh(new RoundedBoxGeometry(p.x1 - seatFrom, pad, 2 * w, 5, 2.6), MAT.pad);
+  padMesh.position.set((seatFrom + p.x1) / 2, h - pad / 2, 0); grp.add(padMesh);
+  const plate = new THREE.Mesh(new RoundedBoxGeometry(p.x1 - seatFrom - 6, 2, 2 * w - 8, 2, 0.8), MAT.frame);
+  plate.position.set((seatFrom + p.x1) / 2, h - pad - 1, 0); grp.add(plate);
+  const legX = [p.x0 + 6, p.x1 - 6];
+  const contacts = [];
+  for (const x of legX) {
+    const post = new THREE.Mesh(new RoundedBoxGeometry(5, h - pad - 2, 5, 2, 1), MAT.frame); post.position.set(x, (h - pad - 2) / 2, 0);
+    const foot = new THREE.Mesh(new RoundedBoxGeometry(6, 3, 2 * w + 10, 2, 1.2), MAT.frame); foot.position.set(x, 1.5, 0);
+    grp.add(post, foot);
+    contacts.push({ p: [x, 0, 0], h: 0, size: 2 * w + 22, aspect: 0.32, dir: [0, 0, 1] });
+  }
+  const rail = new THREE.Mesh(new RoundedBoxGeometry(legX[1] - legX[0], 4, 4, 2, 1), MAT.frame); rail.position.set((legX[0] + legX[1]) / 2, 9, 0); grp.add(rail);
+  grp.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+  contacts.push({ p: [(p.x0 + p.x1) / 2, 0, 0], h: 10, size: p.x1 - p.x0 + 20, aspect: 0.4, dir: [1, 0, 0] });
+  return { obj: grp, update() {}, contacts: () => contacts };
+}
+
+// ───────── folga da barra: o corpo MakeHuman é mais grosso que o manequim do motor ─────────
+// empurra mãos/punhos (e a barra) para fora de coxas e canelas, na direção que já os separa
+function clearBar(s) {
+  const c = Anim.midHands(s);
+  let ax = sub(s.hand.L, s.hand.R); if (len(ax) < 5) return s; ax = unit(ax);
+  let push = [0, 0, 0], best = 0;
+  const segs = [];
+  // espessura à frente do eixo do osso, medida na malha MakeHuman (cm, t = 0..1)
+  const TH = [12.7, 11.6, 11.6, 10.7, 8.4, 6.0], SH = [5.5, 4.2, 3.7, 3.1, 2.8, 2.2];
+  const prof = (P, t) => { const x = t * 5, i = Math.min(4, Math.floor(x)); return P[i] + (P[i + 1] - P[i]) * (x - i); };
+  for (const k of ['L', 'R']) { segs.push([s.hip[k], s.knee[k], TH]); segs.push([s.knee[k], s.ankle[k], SH]); }
+  for (const [a, b, PR] of segs) {
+    for (let i = 0; i <= 20; i++) {
+      const t = i / 20; const p = lerp(a, b, t);
+      const q = add(c, mul(ax, dot(sub(p, c), ax))); // ponto da barra mais próximo
+      const d = sub(q, p); const dl = len(d); const need = prof(PR, t) + 2.9; // raio da barra 1,4 + pele 1,5
+      if (dl < need && need - dl > best) { best = need - dl; push = mul(unit(dl > 0.1 ? d : s.front), need - dl); }
+    }
+  }
+  if (best <= 0) return s;
+  const o = { ...s, hand: { ...s.hand }, wrist: { ...s.wrist } };
+  for (const k of ['L', 'R']) { o.hand[k] = add(s.hand[k], push); o.wrist[k] = add(s.wrist[k], push); }
+  return o;
+}
+
+// ───────── demais aparelhos: desenhados a partir de Anim.shapesOf (mesma geometria que o motor verifica) ─────────
+MAT.steel = new THREE.MeshStandardMaterial({ color: '#a9afb6', metalness: 0.85, roughness: 0.3 });
+MAT.cable = new THREE.MeshStandardMaterial({ color: '#1e2126', metalness: 0.2, roughness: 0.7 });
+const PAL_MAT = { '#2f3237': 'pad', '#2b2c2f': 'plate', '#9aa0a7': 'steel', '#80868d': 'steel', '#abb1b8': 'chrome', '#a9afb6': 'chrome', '#6b7178': 'frame', '#3d4248': 'cable', '#e9ecef': 'mat' };
+const matOf = (col) => MAT[PAL_MAT[col] || 'frame'];
+const SHAPE_GEO = { rod: new THREE.CylinderGeometry(1, 1, 1, 20), disc: new THREE.CylinderGeometry(1, 1, 1, 48), box: {} };
+const boxGeo = (w, h, d) => { const k = [w, h, d].map((x) => x.toFixed(1)).join(':'); return (SHAPE_GEO.box[k] ||= new RoundedBoxGeometry(w, h, d, 2, Math.min(2.4, Math.min(w, h, d) * 0.3))); };
+const PROP_NAME = { dumbbells: 'halter', pullupBar: 'barra fixa', legPress: 'leg press', latPulldown: 'puxada', cable: 'polia' };
+const _q = new THREE.Quaternion(), _m = new THREE.Matrix4(), _v = new THREE.Vector3(), _s = new THREE.Vector3();
+/** matriz de uma forma do motor sobre a geometria unitária correspondente */
+function shapeMesh(sh) {
+  if (sh.t === 'rod') {
+    const d = sub(sh.b, sh.a), l = len(d) || 0.01;
+    _q.setFromUnitVectors(Y, _v.set(...unit(d)));
+    return { geo: SHAPE_GEO.rod, mat: matOf(sh.color), m: _m.compose(new THREE.Vector3(...lerp(sh.a, sh.b, 0.5)), _q, _s.set(sh.r, l, sh.r)).clone() };
+  }
+  if (sh.t === 'disc') {
+    _q.setFromUnitVectors(Y, _v.set(...unit(sh.axis)));
+    if (sh.plate) return { geo: plateGeo(sh.r, sh.w), mat: MAT.plate, m: _m.compose(new THREE.Vector3(...sh.c), _q, _s.set(1, 1, 1)).clone() };
+    return { geo: SHAPE_GEO.disc, mat: matOf(sh.fill), m: _m.compose(new THREE.Vector3(...sh.c), _q, _s.set(sh.r, sh.w, sh.r)).clone() };
+  }
+  const la = len(sh.a), lb = len(sh.b), lc = len(sh.c);
+  const m = new THREE.Matrix4().makeBasis(new THREE.Vector3(...unit(sh.a)), new THREE.Vector3(...unit(sh.b)), new THREE.Vector3(...unit(sh.c)));
+  m.setPosition(...add(sh.o, mul(add(add(sh.a, sh.b), sh.c), 0.5)));
+  return { geo: boxGeo(la, lb, lc), mat: matOf(sh.fill), m };
+}
+function makeShapes(p) {
+  const grp = new THREE.Group();
+  const pool = [];
+  return {
+    obj: grp, spec: p,
+    update(s) {
+      const shapes = Anim.shapesOf(p, s);
+      this.shapes = shapes;
+      shapes.forEach((sh, i) => {
+        const { geo, mat, m } = shapeMesh(sh);
+        let mesh = pool[i];
+        if (!mesh) { mesh = new THREE.Mesh(geo, mat); mesh.matrixAutoUpdate = false; mesh.castShadow = true; mesh.receiveShadow = true; grp.add(mesh); pool.push(mesh); }
+        mesh.geometry = geo; mesh.material = mat; mesh.visible = true;
+        mesh.matrix.copy(m); mesh.matrixWorldNeedsUpdate = true;
+      });
+      for (let i = shapes.length; i < pool.length; i++) pool[i].visible = false;
+    },
+    contacts() { return []; },
+  };
+}
+/** profundidade (cm) do ponto dentro de uma forma do motor; ≤ 0 = fora */
+function shapeDepth(sh, q) {
+  if (sh.t === 'rod') {
+    const ab = sub(sh.b, sh.a), t = dot(sub(q, sh.a), ab) / (dot(ab, ab) || 1);
+    if (t <= 0 || t >= 1) return 0;
+    return sh.r - len(sub(q, add(sh.a, mul(ab, t))));
+  }
+  if (sh.t === 'disc') {
+    const ax = unit(sh.axis), d = sub(q, sh.c), al = dot(d, ax);
+    return Math.min(sh.w / 2 - Math.abs(al), sh.r - len(sub(d, mul(ax, al))));
+  }
+  const d = sub(q, sh.o);
+  let m = Infinity;
+  for (const e of [sh.a, sh.b, sh.c]) { const l = len(e), u = dot(d, e) / l; m = Math.min(m, u, l - u); }
+  return m;
+}
+
+function makeMat(p) {
+  // topo do colchonete = chão do motor (y = 0)
+  const m = new THREE.Mesh(new RoundedBoxGeometry(p.x1 - p.x0, 1.2, 64, 3, 0.55), MAT.mat);
+  m.position.set((p.x0 + p.x1) / 2, -0.6, 0); m.receiveShadow = true;
+  return { obj: m, update() {}, contacts: () => [] };
+}
+
+// ───────── corpo MakeHuman ─────────
+function makeBody(scene, look, outfit) {
+  const geo = new THREE.BufferGeometry();
+  for (const k of ['position', 'normal', 'skinIndex', 'skinWeight', 'groove', 'perp', 'restPos', 'cav', 'color']) if (baseGeo.attributes[k]) geo.setAttribute(k, baseGeo.attributes[k]);
+  geo.setIndex(baseGeo.index);
+  const act = new THREE.BufferAttribute(new Float32Array(N * 2), 2);
+  geo.setAttribute('act', act);
+  const rig = MHRig.makeRig(DATA);
+  const bones = rig.bones.map(() => new THREE.Bone());
+  const skeleton = new THREE.Skeleton(bones, bones.map(() => new THREE.Matrix4()));
+  const mesh = new THREE.SkinnedMesh(geo, bodyMaterial(look, outfit));
+  mesh.bind(skeleton, new THREE.Matrix4());
+  mesh.frustumCulled = false; mesh.castShadow = true; mesh.receiveShadow = true;
+  scene.add(mesh);
+  const mats = bones.map((b) => b.matrixWorld);
+  return {
+    mesh, rig, mats,
+    pose(s, modes) {
+      if (REST) rig.restPose(); else rig.pose(s, modes);
+      rig.matrices(mats);
+    },
+    paint(levels) {
+      const a = act.array;
+      a.fill(0);
+      for (const [id, lv] of Object.entries(levels)) {
+        const m = MID[id]; if (m === undefined) continue;
+        const o = lv === 2 ? 0 : 1;
+        for (let i = 0; i < N; i++) { const v = MASKS[i * NM + m] / 255; if (v > a[i * 2 + o]) a[i * 2 + o] = v; }
+      }
+      act.needsUpdate = true;
+    },
+  };
+}
+
+// ───────── física na malha: nenhuma parte do corpo atravessa chão ou aparelho ─────────
+// osso dominante de cada vértice -> região legível no relatório
+const BONE_NAMES = DATA.bones.map((b) => b.name);
+const REGION_OF = (n) => (/^f\d|^hand/.test(n) ? 'mão' : /^fore|^elbow/.test(n) ? 'antebraço' : /^upper/.test(n) ? 'braço' : /^thigh/.test(n) ? 'coxa' : /^shin|^knee/.test(n) ? 'canela/joelho' : /^foot|^toes/.test(n) ? 'pé' : /^head|^neck/.test(n) ? 'cabeça' : 'tronco');
+const VREG = new Array(N), VBONE = new Uint8Array(N);
+for (let i = 0; i < N; i++) {
+  let bi = 0, bw = -1;
+  for (let k = 0; k < 4; k++) if (SKW[i * 4 + k] > bw) { bw = SKW[i * 4 + k]; bi = SKI[i * 4 + k]; }
+  VBONE[i] = bi; VREG[i] = REGION_OF(BONE_NAMES[bi]) + (/\.L$/.test(BONE_NAMES[bi]) ? ' E' : /\.R$/.test(BONE_NAMES[bi]) ? ' D' : '');
+}
+const SKINNED = new Float32Array(N * 3);
+function skinCPU(mats) {
+  const e = mats.map((m) => m.elements);
+  for (let i = 0; i < N; i++) {
+    const x = POS[i * 3], y = POS[i * 3 + 1], z = POS[i * 3 + 2];
+    let ox = 0, oy = 0, oz = 0;
+    for (let k = 0; k < 4; k++) {
+      const w = SKW[i * 4 + k] / 255; if (!w) continue;
+      const m = e[SKI[i * 4 + k]];
+      ox += w * (m[0] * x + m[4] * y + m[8] * z + m[12]);
+      oy += w * (m[1] * x + m[5] * y + m[9] * z + m[13]);
+      oz += w * (m[2] * x + m[6] * y + m[10] * z + m[14]);
+    }
+    SKINNED[i * 3] = ox; SKINNED[i * 3 + 1] = oy; SKINNED[i * 3 + 2] = oz;
+  }
+  return SKINNED;
+}
+const TOL = 0.6; // cm de "afundamento" aceitável contra aparelho e contra o próprio corpo
+const TOL_FLOOR = 1.0; // apoio no chão: pele e músculo comprimem sob o peso do corpo (antebraço na prancha)
+const TOL_PAD = 1.5; // estofado de aparelho (banco, assento, rolos) cede sob o corpo
+/** profundidade de penetração (cm) por região; vazio = ok */
+function physics(mats, spec, s) {
+  const P = skinCPU(mats);
+  const worst = {};
+  const at = (window.__physAt ||= {});
+  const hit = (i, d, what) => { if (d <= (what === 'chão' ? TOL_FLOOR : TOL)) return; const k = VREG[i] + ' × ' + what; if (!(worst[k] > d)) { worst[k] = d; at[spec.id + ' ' + k] = { v: i, bone: BONE_NAMES[VBONE[i]], p: [P[i * 3], P[i * 3 + 1], P[i * 3 + 2]].map((x) => +x.toFixed(1)), hand: s.hand, wrist: s.wrist, elbow: s.elbow }; } };
+  const bar = (spec.props || []).find((p) => p.kind === 'barbell');
+  let bc, bax;
+  if (bar) { bc = Anim.midHands(s); bax = sub(s.hand.L, s.hand.R); bax = len(bax) > 5 ? unit(bax) : [0, 0, 1]; }
+  const benches = (spec.props || []).filter((p) => p.kind === 'bench');
+  // demais aparelhos: as formas desenhadas neste quadro (estofado comprime até 2 cm; pé na plataforma até 1 cm)
+  const gen = [];
+  for (const p of spec.props || []) if (PROP_NAME[p.kind]) for (const sh of Anim.shapesOf(p, s)) {
+    const pts = sh.t === 'box' ? [0, 1].flatMap((i) => [0, 1].flatMap((j) => [0, 1].map((k) => add(add(add(sh.o, mul(sh.a, i)), mul(sh.b, j)), mul(sh.c, k))))) : sh.t === 'disc' ? [sh.c] : [sh.a, sh.b];
+    const pad = sh.t === 'box' ? 0 : sh.r + (sh.w || 0);
+    const lo3 = [0, 1, 2].map((a) => Math.min(...pts.map((q) => q[a])) - pad), hi3 = [0, 1, 2].map((a) => Math.max(...pts.map((q) => q[a])) + pad);
+    gen.push({ sh, lo3, hi3, what: PROP_NAME[p.kind], soft: (sh.fill || sh.color) === '#2f3237' }); // estofado (assento, encosto, rolos)
+  }
+  // corpo contra ele mesmo: mão dentro da coxa/canela (cápsulas com o raio medido na malha, menos 1 cm de folga)
+  const caps = [];
+  for (const k of ['L', 'R']) { caps.push(['coxa', s.hip[k], s.knee[k], 8.5, 6.0]); caps.push(['canela', s.knee[k], s.ankle[k], 5.5, 3.2]); }
+  const minY = {};
+  for (let i = 0; i < N; i++) {
+    const x = P[i * 3], y = P[i * 3 + 1], z = P[i * 3 + 2];
+    if (!(minY[VREG[i]] <= y)) minY[VREG[i]] = y;
+    hit(i, -y, 'chão');
+    if (/^mão/.test(VREG[i])) for (const [nm, a, b, r0, r1] of caps) {
+      const ab = sub(b, a); const t = clamp(dot(sub([x, y, z], a), ab) / dot(ab, ab), 0, 1);
+      hit(i, r0 + (r1 - r0) * t - len(sub([x, y, z], add(a, mul(ab, t)))), nm);
+    }
+    for (const b of benches) {
+      const h = b.height ?? Anim.DIM.bench.height, w = Anim.DIM.bench.halfWidth;
+      const x0 = b.incline ? b.incline.hingeX : b.x0;
+      if (x > x0 && x < b.x1 && Math.abs(z) < w && y < h && y > h - Anim.DIM.bench.pad && Math.min(h - y, x - x0, b.x1 - x, w - Math.abs(z)) > TOL_PAD) hit(i, Math.min(h - y, x - x0, b.x1 - x, w - Math.abs(z)), 'banco');
+    }
+    if (gen.length && !/^mão/.test(VREG[i])) for (const g of gen) {
+      if (x < g.lo3[0] || x > g.hi3[0] || y < g.lo3[1] || y > g.hi3[1] || z < g.lo3[2] || z > g.hi3[2]) continue;
+      const d = shapeDepth(g.sh, [x, y, z]);
+      const tol = g.soft ? TOL_PAD : /^pé/.test(VREG[i]) ? TOL_FLOOR : TOL;
+      if (d > tol) hit(i, d, g.what);
+    }
+    if (bar && !/mão/.test(VREG[i])) {
+      const d = sub([x, y, z], bc); const along = dot(d, bax); const r = len(sub(d, mul(bax, along)));
+      const a = Math.abs(along), { sleeveFrom, halfLength, plateRadius, plateWidth } = Anim.DIM.bar;
+      if (a < sleeveFrom) hit(i, 1.4 - r, 'barra');
+      else if (a < sleeveFrom + plateWidth + 0.5 && a < halfLength) hit(i, Math.min(plateRadius - r, a - sleeveFrom), 'anilha');
+    }
+  }
+  (window.__physMin ||= {})[spec.id] = Object.fromEntries(Object.entries(minY).map(([k, v]) => [k, +v.toFixed(1)]));
+  return worst;
+}
+
+// ───────── resolução de contato (barata, roda em todo quadro) ─────────
+// subconjuntos de vértices: cada mão; frente do tronco (onde a barra do supino encosta)
+const HAND_V = { L: [], R: [] }, CHEST_V = [];
+for (let i = 0; i < N; i++) {
+  const r = VREG[i];
+  if (r === 'mão E') HAND_V.L.push(i); else if (r === 'mão D') HAND_V.R.push(i);
+  else if (r === 'tronco' && POS[i * 3] > 0 && POS[i * 3 + 1] > 105 && POS[i * 3 + 1] < 145) CHEST_V.push(i);
+  else if (/^(coxa|canela)/.test(r)) CHEST_V.push(i); // pernas (barra no terra)
+}
+function skinOne(e, i) {
+  const x = POS[i * 3], y = POS[i * 3 + 1], z = POS[i * 3 + 2];
+  let ox = 0, oy = 0, oz = 0;
+  for (let k = 0; k < 4; k++) {
+    const w = SKW[i * 4 + k] / 255; if (!w) continue;
+    const m = e[SKI[i * 4 + k]];
+    ox += w * (m[0] * x + m[4] * y + m[8] * z + m[12]); oy += w * (m[1] * x + m[5] * y + m[9] * z + m[13]); oz += w * (m[2] * x + m[6] * y + m[10] * z + m[14]);
+  }
+  return [ox, oy, oz];
+}
+const lift = (s, keys, d) => { const o = { ...s, hand: { ...s.hand }, wrist: { ...s.wrist } }; for (const k of keys) { o.hand[k] = add(s.hand[k], d); o.wrist[k] = add(s.wrist[k], d); } return o; };
+/** posa; se mão solta afunda no chão ou a barra afunda no peito, desloca o alvo e posa de novo */
+function resolveContacts(body, spec, s, modes) {
+  const bar = (spec.props || []).some((p) => p.kind === 'barbell');
+  for (let it = 0; it < 3; it++) {
+    body.pose(s, modes);
+    if (REST) return s;
+    const e = body.mats.map((m) => m.elements);
+    let moved = false;
+    for (const k of ['L', 'R']) {
+      if (modes[k] === 'grip' || modes[k].thumb) continue;
+      let minY = Infinity; for (const i of HAND_V[k]) minY = Math.min(minY, skinOne(e, i)[1]);
+      if (minY < -0.2) { s = lift(s, [k], [0, 0.15 - minY, 0]); moved = true; }
+    }
+    if (bar) {
+      const c = Anim.midHands(s); let ax = sub(s.hand.L, s.hand.R); ax = len(ax) > 5 ? unit(ax) : [0, 0, 1];
+      // barra × peito/pernas: empurra a barra para fora do ponto mais afundado, na direção que os separa
+      // (a direção vem do eixo do osso para a barra: com a barra já dentro da pele, "da pele para a barra" apontaria para dentro)
+      let pen = 0, dir = null;
+      for (const i of CHEST_V) {
+        const d = sub(c, skinOne(e, i)); const along = dot(d, ax);
+        if (Math.abs(along) > Anim.DIM.bar.sleeveFrom) continue;
+        const r = len(sub(d, mul(ax, along)));
+        if (1.4 + 0.15 - r <= pen) continue;
+        pen = 1.4 + 0.15 - r;
+        const bone = BONE_NAMES[VBONE[i]], k = /\.R$/.test(bone) ? 'R' : 'L';
+        const seg = /^thigh/.test(bone) ? [s.hip[k], s.knee[k]] : /^(shin|knee)/.test(bone) ? [s.knee[k], s.ankle[k]] : null;
+        let from = s.chest;
+        if (seg) { const sd = sub(seg[1], seg[0]); const tt = clamp(dot(sub(c, seg[0]), sd) / dot(sd, sd), 0, 1); from = add(seg[0], mul(sd, tt)); }
+        const out = sub(c, from);
+        dir = unit(sub(out, mul(ax, dot(out, ax))));
+      }
+      if (pen > 0.2) { s = lift(s, ['L', 'R'], mul(dir, pen + 0.1)); moved = true; }
+    }
+    if (!moved) return s;
+  }
+  body.pose(s, modes);
+  return s;
+}
+
+// ───────── cartões ─────────
+const grid = document.getElementById('grid');
+if (CARDS.length === 1) grid.classList.add('single');
+if (COLS) { grid.style.gridTemplateColumns = `repeat(${Number(COLS)}, minmax(0, 1fr))`; grid.style.maxWidth = 'none'; }
+const cards = [];
+function phaseSegments(spec) {
+  const T = Anim.cycleMs(spec); const segs = [];
+  for (let t = 0; t < T; t += 10) { const ph = Anim.sampleAt(spec, t).phase; if (!segs.length || segs[segs.length - 1].phase !== ph) segs.push({ phase: ph, t0: t, t1: T }); if (segs.length > 1) segs[segs.length - 2].t1 = segs[segs.length - 1].t0; }
+  return segs;
+}
+function camVectors(c) {
+  const D = Math.PI / 180;
+  const toCam = [Math.cos(c.yaw * D) * Math.cos(c.pitch * D), Math.sin(c.pitch * D), Math.sin(c.yaw * D) * Math.cos(c.pitch * D)];
+  const right = unit(cross([0, 1, 0], toCam)); const up = unit(cross(toCam, right));
+  return { toCam, right, up };
+}
+
+function makeCard(cfg, idx) {
+  const spec = Anim.EXERCISES.find((e) => e.id === cfg.id);
+  const el = document.createElement('article');
+  el.className = 'card' + (cfg.big ? ' big' : '');
+  el.innerHTML = `<div class="stage"><canvas></canvas><div class="phase"><i></i><span></span></div><div class="look"></div><div class="phys" hidden></div></div>
+    <div class="body"><div class="title"><h2></h2><span class="dur"></span></div><div class="timeline"></div>
+    <p class="label">Músculos principais</p><div class="chips prim"></div>
+    <div class="sec-wrap"><p class="label">Secundários</p><div class="chips secs"></div></div></div>`;
+  grid.appendChild(el);
+  el.querySelector('h2').textContent = spec.name;
+  el.querySelector('.look').textContent = LOOKS[cfg.look].label;
+  const T = Anim.cycleMs(spec);
+  el.querySelector('.dur').textContent = `${(T / 1000).toFixed(1).replace('.', ',')} s / rep`;
+  const segs = phaseSegments(spec);
+  const tl = el.querySelector('.timeline');
+  for (const sg of segs) { const d = document.createElement('div'); d.className = 'seg'; d.style.flex = String(sg.t1 - sg.t0); d.title = sg.phase; d.appendChild(document.createElement('b')); tl.appendChild(d); sg.fill = d.firstChild; }
+  const canvas = el.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  const phaseEl = el.querySelector('.phase span');
+  const primEl = el.querySelector('.prim'), secEl = el.querySelector('.secs');
+  const physEl = el.querySelector('.phys');
+  const frozen = cfg.at !== null || FREEZE !== null;
+  const GRIPS = (spec.props || []).some((p) => ['barbell', 'dumbbells', 'pullupBar', 'latPulldown', 'legPress', 'cable'].includes(p.kind));
+
+  const scene = new THREE.Scene();
+  scene.environment = ENV; scene.environmentIntensity = 0.32;
+  const cam = { ...(spec.camera || Anim.DEFAULT_CAMERA) };
+  if (params.has('yaw')) cam.yaw = Number(params.get('yaw'));
+  if (params.has('pitch')) cam.pitch = Number(params.get('pitch'));
+  const { toCam, right, up } = camVectors(cam);
+  const body = makeBody(scene, cfg.look, outfitFor(spec));
+  const props = REST ? [] : (spec.props || []).map((p) => (p.kind === 'barbell' ? makeBarbell(p) : p.kind === 'bench' ? makeBench(p) : p.kind === 'mat' ? makeMat(p) : PROP_NAME[p.kind] ? makeShapes(p) : null)).filter(Boolean);
+  for (const p of props) scene.add(p.obj);
+
+  // enquadramento estável no ciclo
+  const lo = [Infinity, Infinity], hi = [-Infinity, -Infinity];
+  const pts = [], propPts = [];
+  const FRAME_MARGIN = Number(params.get('margin') || 35);
+  const JR = { hip: 14, knee: 9, ankle: 7, heel: 6, toe: 6, shoulder: 13, elbow: 8, wrist: 6, hand: 7 };
+  for (let t = 0; t < T; t += 60) {
+    const s = Anim.sampleAt(spec, t).skeleton;
+    pts.push([s.pelvis, 20], [s.chest, 22], [s.neck, 10], [s.head, 15]);
+    for (const k of ['L', 'R']) for (const j of Object.keys(JR)) pts.push([s[j][k], JR[j]]);
+    for (const q of [s.heel.L, s.heel.R, s.toe.L, s.toe.R, s.hand.L, s.hand.R, s.pelvis, s.head]) { lo[0] = Math.min(lo[0], q[0]); lo[1] = Math.min(lo[1], q[2]); hi[0] = Math.max(hi[0], q[0]); hi[1] = Math.max(hi[1], q[2]); }
+    for (const p of spec.props || []) if (PROP_NAME[p.kind]) for (const sh of Anim.shapesOf(p, s)) {
+      if (sh.t === 'box') for (const i of [0, 1]) for (const j of [0, 1]) for (const k of [0, 1]) propPts.push([add(add(add(sh.o, mul(sh.a, i)), mul(sh.b, j)), mul(sh.c, k)), 1]);
+      else if (sh.t === 'disc') propPts.push([sh.c, sh.r]);
+      else for (let q = 0; q <= 8; q++) propPts.push([lerp(sh.a, sh.b, q / 8), sh.r]); // tubo longo: pontos ao longo dele
+    }
+    for (const p of spec.props || []) if (p.kind === 'barbell') { const c = Anim.midHands(s); let ax = sub(s.hand.L, s.hand.R); ax = len(ax) > 5 ? unit(ax) : [0, 0, 1]; for (const k of [-1, 1]) { pts.push([add(c, mul(ax, k * Anim.DIM.bar.halfLength)), 3]); pts.push([add(c, mul(ax, k * 70)), 23]); } }
+  }
+  // aparelhos grandes (torre, montantes, trilhos): só a parte perto do corpo entra no enquadramento
+  {
+    const b0 = [0, 1, 2].map((a) => Math.min(...pts.map(([q]) => q[a])) - FRAME_MARGIN), b1 = [0, 1, 2].map((a) => Math.max(...pts.map(([q]) => q[a])) + FRAME_MARGIN);
+    for (const pp of propPts) if (pp[0].every((c, a) => c >= b0[a] && c <= b1[a])) pts.push(pp);
+  }
+  for (const p of spec.props || []) if (p.kind === 'mat') for (const x of [p.x0, p.x1]) for (const z of [-32, 32]) pts.push([[x, 0, z], 2]);
+  for (const p of spec.props || []) if (p.kind === 'bench') for (const x of [p.x0, p.x1]) for (const z of [-20, 20]) for (const y of [0, p.height ?? 43]) pts.push([[x, y, z], 2]);
+  if (REST) { pts.length = 0; for (const y of [0, 175]) for (const z of [-60, 60]) pts.push([[0, y, z], 4]); }
+  const FOV = 20, tanH = Math.tan((FOV / 2) * Math.PI / 180);
+  const aspect = cfg.big ? 16 / 10 : 1;
+  const target = [0, 90, 0];
+  const camera = new THREE.PerspectiveCamera(FOV, aspect, 10, 6000);
+  let distC = 600;
+  camera.position.set(...add(target, mul(toCam, distC))); camera.up.set(...up); camera.lookAt(...target);
+  const fw = mul(toCam, -1);
+  for (let it = 0; it < 5; it++) {
+    const cp = camera.position.toArray();
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const [p, r] of pts) {
+      const d = sub(p, cp); const z = dot(d, fw);
+      const x = dot(d, right) / (z * tanH * aspect), y = dot(d, up) / (z * tanH), rx = r / (z * tanH * aspect), ry = r / (z * tanH);
+      x0 = Math.min(x0, x - rx); x1 = Math.max(x1, x + rx); y0 = Math.min(y0, y - ry); y1 = Math.max(y1, y + ry);
+    }
+    const dc = dot(sub(target, cp), fw);
+    const shift = add(mul(right, ((x0 + x1) / 2) * dc * tanH * aspect), mul(up, ((y0 + y1) / 2) * dc * tanH));
+    const nt = add(target, shift); for (let i = 0; i < 3; i++) target[i] = nt[i];
+    distC = dc * Math.max(x1 - x0, y1 - y0) / 2 * 1.06;
+    camera.position.set(...add(target, mul(toCam, distC))); camera.lookAt(...target);
+  }
+  // close-up opcional: ?focus=x,y,z&zoom=k
+  if (params.has('focus')) {
+    const f = params.get('focus').split(',').map(Number);
+    const z = Number(params.get('zoom') || 2.5);
+    for (let i = 0; i < 3; i++) target[i] = f[i];
+    camera.position.set(...add(target, mul(toCam, distC / z))); camera.lookAt(...target);
+  }
+  camera.updateProjectionMatrix();
+
+  // luzes
+  const key = new THREE.DirectionalLight('#fff4e8', 2.6);
+  key.position.set(...add(target, mul(unit(add(add(mul(toCam, 0.8), [0, 1.0, 0]), mul(right, -1.1))), 400))); key.target.position.set(...target);
+  const fill = new THREE.DirectionalLight('#dfe8ff', 0.45);
+  fill.position.set(...add(target, mul(unit(add(add(toCam, [0, 0.2, 0]), mul(right, 1.2))), 400))); fill.target.position.set(...target);
+  const rim = new THREE.DirectionalLight('#ffffff', 2.0);
+  rim.position.set(...add(target, mul(unit(add(add(mul(toCam, -1), [0, 0.7, 0]), mul(right, 0.9))), 400))); rim.target.position.set(...target);
+  const floorC = [(lo[0] + hi[0]) / 2, 0, (lo[1] + hi[1]) / 2];
+  const shadowL = new THREE.DirectionalLight('#ffffff', 0.12);
+  shadowL.position.set(floorC[0] + 10, 400, floorC[2] + 6); shadowL.target.position.set(...floorC); shadowL.castShadow = true;
+  shadowL.shadow.mapSize.set(1024, 1024);
+  const ext = Math.max(hi[0] - lo[0], hi[1] - lo[1], 120) / 2 + 130;
+  Object.assign(shadowL.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext, near: 100, far: 700 });
+  shadowL.shadow.radius = 14; shadowL.shadow.blurSamples = 20; shadowL.shadow.bias = -0.0005;
+  scene.add(key, key.target, fill, fill.target, rim, rim.target, shadowL, shadowL.target);
+  const hemi = new THREE.HemisphereLight('#ffffff', '#8d8378', 0.25); scene.add(hemi);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200).rotateX(-Math.PI / 2), MAT.ground);
+  ground.position.set(floorC[0], -0.02, floorC[2]); ground.receiveShadow = true; scene.add(ground);
+
+  const blobs = [];
+  const getBlob = (i) => { while (blobs.length <= i) { const m = new THREE.Mesh(blobGeo, new THREE.MeshBasicMaterial({ map: blobTex, color: 0x000000, transparent: true, depthWrite: false, opacity: 0 })); m.matrixAutoUpdate = false; m.renderOrder = -1; scene.add(m); blobs.push(m); } return blobs[i]; };
+  const mtx = new THREE.Matrix4();
+  function setBlob(i, p, h, sizeL, asp, dir, strength) {
+    const m = getBlob(i); const o = clamp(1 - h / 28, 0, 1) ** 1.6 * strength;
+    m.visible = o > 0.01; m.material.opacity = o * (isDark() ? 1.25 : 1);
+    const ang = Math.atan2(-dir[2], dir[0]); const grow = 1 + h / 40;
+    mtx.makeRotationY(ang).scale(new THREE.Vector3(sizeL * grow, 1, sizeL * asp * grow)); mtx.setPosition(p[0], 0.06, p[2]);
+    m.matrix.copy(mtx); m.matrixWorldNeedsUpdate = true;
+  }
+
+  let lastPhase = null;
+  function setPhase(ph) {
+    if (ph === lastPhase) return; lastPhase = ph;
+    phaseEl.textContent = ph;
+    const m = Anim.musclesOf(spec, ph);
+    const levels = {};
+    if (ALLM === 'all') for (const id of DATA.maskIds) levels[id] = 2;
+    else if (ALLM) ALLM.split(',').forEach((id, i) => { levels[id] = i % 2 ? 1 : 2; });
+    else { for (const id of m.secondary) levels[id] = 1; for (const id of m.primary) levels[id] = 2; }
+    if (!DEBUG) body.paint(levels);
+    const chip = (id, cls) => `<span class="chip ${cls}">${Anim.MUSCLES[id] || id}</span>`;
+    primEl.innerHTML = m.primary.map((id) => chip(id, '')).join('');
+    secEl.innerHTML = m.secondary.map((id) => chip(id, 'sec')).join('') || '<span class="chip sec">—</span>';
+  }
+
+  const card = {
+    el, visible: true, body,
+    applyTheme() {
+      const dk = isDark();
+      MAT.ground.opacity = dk ? 0.42 : 0.16; rim.intensity = dk ? 3.0 : 2.0; key.intensity = dk ? 2.4 : 2.6;
+      hemi.groundColor.set(dk ? '#3a3632' : '#8d8378');
+    },
+    frame(now) {
+      if (!this.visible) return;
+      const t = cfg.at !== null ? (cfg.at[0] === 'f' ? Number(cfg.at.slice(1)) * T : Number(cfg.at)) % T : FREEZE !== null ? FREEZE % T : (now + idx * 700) % T;
+      const smp = Anim.sampleAt(spec, t);
+      const phase = smp.phase;
+      let s = props.some((p) => p.plates) && !NOCLEAR ? clearBar(smp.skeleton) : smp.skeleton;
+      setPhase(phase);
+      const modes = {};
+      // o motor diz se a palma está apoiada (s.palm); sem aparelho de segurar, o resto é mão solta
+      // polegar: barra = para a outra mão (pronada); halter neutro e manopla do leg press = para a frente;
+      // halter atravessado (rosca) = para fora (supinada)
+      const dbl = (spec.props || []).find((p) => p.kind === 'dumbbells');
+      for (const k of ['L', 'R']) {
+        const out = sub(s.hand[k], s.hand[k === 'L' ? 'R' : 'L']);
+        modes[k] = !GRIPS ? { flat: s.palm?.[k] ?? 0 }
+          : dbl?.axis === 'x' || (spec.props || []).some((p) => p.kind === 'legPress') ? { thumb: [1, 0, 0] }
+          : dbl?.axis === 'z' ? { thumb: out }
+          : 'grip';
+      }
+      s = resolveContacts(body, spec, s, modes);
+      if (frozen && !REST) {
+        const w = physics(body.mats, spec, s);
+        for (const k of ['L', 'R']) {
+          const side = k === 'L' ? 'E' : 'D';
+          if (body.rig.report.reach[k] > 1) w[`braço ${side} não alcança`] = body.rig.report.reach[k];
+          if (body.rig.report.legReach[k] > 1) w[`perna ${side} não alcança`] = body.rig.report.legReach[k];
+        }
+        const bad = Object.entries(w).sort((a, b) => b[1] - a[1]);
+        physEl.hidden = false;
+        physEl.className = 'phys ' + (bad.length ? 'bad' : 'ok');
+        physEl.textContent = bad.length ? bad.slice(0, 3).map(([k, d]) => `${k} ${d.toFixed(1)} cm`).join(' · ') : 'física ok';
+        (window.__phys ||= {})[`${spec.id}@${cfg.at ?? FREEZE}`] = w;
+      }
+      for (const p of props) p.update(s);
+      for (const sg of segs) sg.fill.style.width = t >= sg.t1 ? '100%' : t <= sg.t0 ? '0%' : `${((t - sg.t0) / (sg.t1 - sg.t0)) * 100}%`;
+      let bi = 0;
+      if (!REST) {
+        for (const k of ['L', 'R']) { const c = lerp(s.heel[k], s.toe[k], 0.5); const h = Math.min(s.heel[k][1], s.toe[k][1]); setBlob(bi++, c, h, 34, 0.45, sub(s.toe[k], s.heel[k]), 0.5); }
+        for (const p of props) for (const c of p.contacts()) setBlob(bi++, c.p, c.h, c.size, c.aspect, c.dir, 0.55);
+        const pc = s.pelvis; setBlob(bi++, [pc[0], 0, pc[2]], Math.max(0, pc[1] - 60) * 0.5, 120, 0.55, s.front, 0.22);
+      }
+      for (let i = bi; i < blobs.length; i++) blobs[i].visible = false;
+      const w = canvas.width, h = canvas.height;
+      const rs = renderer.getSize(new THREE.Vector2());
+      if (rs.x !== w || rs.y !== h) renderer.setSize(w, h, false);
+      camera.aspect = w / h; camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+      ctx.clearRect(0, 0, w, h); ctx.drawImage(renderer.domElement, 0, 0, w, h);
+      window.__report = { reach: { ...body.rig.report.reach }, leg: { ...body.rig.report.legReach } };
+    },
+  };
+  card.applyTheme();
+  new IntersectionObserver((es) => { card.visible = es[0].isIntersecting; }).observe(el);
+  return card;
+}
+
+for (const [i, c] of CARDS.entries()) cards.push(makeCard(c, i));
+root.dataset.theme = initial;
+for (const c of cards) c.applyTheme();
+function resize() {
+  for (const c of cards) {
+    const cv = c.el.querySelector('canvas'); const r = cv.getBoundingClientRect();
+    const w = Math.max(1, Math.round(r.width * DPR)), h = Math.max(1, Math.round(r.height * DPR));
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  }
+}
+addEventListener('resize', resize);
+resize();
+const t0 = performance.now();
+function loop() { const now = performance.now() - t0; for (const c of cards) c.frame(now); if (FREEZE === null && !CARDS.every((c) => c.at !== null)) requestAnimationFrame(loop); }
+if (document.fonts?.ready) document.fonts.ready.then(resize);
+loop();
+if (FREEZE !== null || CARDS.every((c) => c.at !== null)) setTimeout(() => { resize(); loop(); document.body.dataset.ready = '1'; }, 300);
+</script>
+</body>
+</html>

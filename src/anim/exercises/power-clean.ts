@@ -180,6 +180,8 @@ export const powerClean: ExerciseSpec = {
   muscleSource:
     'NSCA — Essentials of Strength Training and Conditioning, 4ª ed. (Haff & Triplett, 2016), cap. 15, power clean (fases e músculos: extensores de quadril, joelho e tornozelo; trapézio e deltoides ao entrar sob a barra). Distribuição por fase a validar na revisão.',
   props: [{ kind: 'barbell' }],
+  // imagens do app: da posição inicial ao fim, uma por fase
+  stills: ['Posição inicial', 'Barra no meio da coxa', 'Saltinho', 'Encaixe', 'Em pé com a barra'],
   // começa na barra no joelho para o encaixe cair na pose do meio (miniatura do app); a posição inicial fecha
   // o ciclo e a 1ª transição parte dela. `handPath: 'shoulder'`: com os braços estendidos quem leva a barra é
   // o ombro (a mão em arco em volta dele nunca passa do alcance)

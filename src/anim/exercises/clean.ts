@@ -59,6 +59,8 @@ export const clean: ExerciseSpec = {
   muscleSource:
     'NSCA — Essentials of Strength Training and Conditioning, 4ª ed. (Haff & Triplett, 2016), cap. 15, power clean e agachamento frontal (extensores de quadril, joelho e tornozelo; trapézio e deltoides ao entrar sob a barra; quadríceps e glúteos na subida do agachamento). Distribuição por fase a validar na revisão.',
   props: [{ kind: 'barbell' }],
+  // imagens do app: da posição inicial ao fim, uma por fase
+  stills: ['Posição inicial', 'Barra no meio da coxa', 'Saltinho', 'Encaixe no fundo', 'Em pé com a barra'],
   // o fundo do agachamento é a pose do meio (miniatura do app); a barra no joelho fecha o ciclo
   frames: [
     { name: 'Barra no meio da coxa', pose: K(MID_THIGH), moveMs: 320, holdMs: 0, phase: 'Primeira puxada', ease: 'linear', handPath: 'shoulder' },

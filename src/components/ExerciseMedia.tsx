@@ -1,14 +1,32 @@
 import { useState } from 'react'
+import { publishedStills, stillUrl } from '../anim/stills'
 import { APP_NAME } from '../brand'
 import { MEDIA_ATTRIBUTION, mediaUrl } from '../data/catalog'
 import { LPO_BY_ID, type LpoAnimation as LpoId } from '../data/lpo'
 import type { Exercise } from '../data/types'
+import { AnimStills } from './AnimStills'
 import { GifPlayer } from './GifPlayer'
 import { LpoAnimation } from './LpoAnimation'
 
 /** Miniatura (jpg) para listas. */
 export function ExerciseThumb({ exercise, size = 56 }: { exercise: Exercise; size?: number }) {
   const [failed, setFailed] = useState(false)
+  // animação própria revisada: a pose do meio, já gerada como imagem
+  const own = publishedStills(exercise.id)
+  if (own) {
+    return (
+      <img
+        src={stillUrl(own.stills[own.thumb].src)}
+        alt=""
+        width={size}
+        height={size}
+        loading="lazy"
+        decoding="async"
+        className="gif-frame shrink-0 rounded-lg object-cover"
+        style={{ width: size, height: size }}
+      />
+    )
+  }
   // LPO: miniatura do dataset (1ª parte); sem ela, quadro da animação própria
   if (exercise.animation && (failed || !exercise.image)) {
     return <LpoAnimation id={exercise.animation as LpoId} still className="shrink-0 rounded-lg" style={{ width: size, height: size }} />
@@ -46,6 +64,16 @@ export function ExerciseThumb({ exercise, size = 56 }: { exercise: Exercise; siz
 export function ExerciseGif({ exercise, className = '' }: { exercise: Exercise; className?: string }) {
   const [failed, setFailed] = useState(false)
   const alt = `Execução: ${exercise.namePt ?? exercise.name}`
+  // animação própria revisada (imagens do corpo 3D, uma por fase): substitui os GIFs do dataset
+  const own = publishedStills(exercise.id)
+  if (own) {
+    return (
+      <figure className={className}>
+        <AnimStills stills={own.stills} alt={alt} />
+        <figcaption className="mt-1 text-[10px] text-muted">Ilustração do {APP_NAME}</figcaption>
+      </figure>
+    )
+  }
   // mesmo player para todos: GIF do dataset ou, nos LPO, os GIFs das partes do movimento em sequência
   const parts = exercise.parts?.length ? exercise.parts : exercise.gif ? [{ gif: exercise.gif, label: '' }] : []
   if (parts.length && !failed) {

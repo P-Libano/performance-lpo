@@ -2,7 +2,7 @@ import { HEIGHT, SIDES, type Side, type Skeleton } from './body'
 import { MUSCLE_IDS } from './muscles'
 import { jointAngle } from './pose'
 import { DIM, insideSolid, midHands, solidsAt, type PropSpec } from './props'
-import { cycleMs, sampleAt, type Check, type ExerciseSpec } from './spec'
+import { cycleMs, keyframeTime, sampleAt, type Check, type ExerciseSpec } from './spec'
 import { add, angle, dist, dot, len, mul, sub, v, type V3 } from './vec'
 
 /**
@@ -380,11 +380,4 @@ export function runChecks(spec: ExerciseSpec, stepMs = 40): Failure[] {
   return failures
 }
 
-/** Instante (ms) em que o ciclo está parado na pose-chave i. */
-export function keyframeTime(spec: Pick<ExerciseSpec, 'frames'>, i: number): number {
-  let t = 0
-  for (let k = 0; k <= i; k++) t += spec.frames[k].moveMs + (k < i ? spec.frames[k].holdMs : 0)
-  return t + Math.min(1, spec.frames[i].holdMs / 2)
-}
-
-export { DIM }
+export { DIM, keyframeTime }

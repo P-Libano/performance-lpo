@@ -63,6 +63,11 @@ export interface ExerciseSpec {
   muscleSource: string
   props: PropSpec[]
   frames: Keyframe[]
+  /**
+   * Imagens paradas para o app (uma por fase, na ordem da execução): nomes de poses-chave. Ausente = as poses
+   * nomeadas na ordem das poses-chave, sem repetir nome, até 5 (`stillFrames`).
+   */
+  stills?: string[]
   checks: Check[]
   review: { status: ReviewStatus; by?: string; date?: string; notes?: string }
 }
@@ -268,6 +273,26 @@ function handsOnArc(a: PoseSpec, b: PoseSpec, mid: PoseSpec, t: number): PoseSpe
     out[k] = add(sm[k], mul(unit(dir), da + (db - da) * t))
   }
   return out
+}
+
+/** Instante (ms) em que o ciclo está parado na pose-chave i. */
+export function keyframeTime(spec: Pick<ExerciseSpec, 'frames'>, i: number): number {
+  let t = 0
+  for (let k = 0; k <= i; k++) t += spec.frames[k].moveMs + (k < i ? spec.frames[k].holdMs : 0)
+  return t + Math.min(1, spec.frames[i].holdMs / 2)
+}
+
+/** Poses que viram imagens paradas no app: índice da pose-chave, nome e instante (ms) em que o ciclo está parado nela. */
+export function stillFrames(spec: Pick<ExerciseSpec, 'frames' | 'stills'>): { frame: number; name: string; ms: number }[] {
+  const named = spec.frames.map((f, i) => ({ frame: i, name: f.name ?? '' })).filter((x) => x.name)
+  const pick = spec.stills
+    ? spec.stills.map((n) => {
+        const hit = named.find((x) => x.name === n)
+        if (!hit) throw new Error(`stills: pose "${n}" não existe`)
+        return hit
+      })
+    : named.filter((x, i) => named.findIndex((y) => y.name === x.name) === i).slice(0, 5)
+  return pick.map((x) => ({ ...x, ms: keyframeTime(spec, x.frame) }))
 }
 
 /** Músculos da fase (para o destaque e o mapa muscular). */

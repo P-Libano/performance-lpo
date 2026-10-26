@@ -4,3 +4,4 @@ dev-dist
 coverage
 *.local
 *.tsbuildinfo
+tools/render3d/anim-engine.js

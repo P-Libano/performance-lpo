@@ -4,6 +4,8 @@ import { runChecks } from '../anim/checks'
 import { EXERCISES } from '../anim/exercises'
 import { AnimPlayer } from '../anim/render/AnimPlayer'
 import type { ExerciseSpec } from '../anim/spec'
+import { STILLS } from '../anim/stills'
+import { AnimStills } from '../components/AnimStills'
 import { ExerciseGif } from '../components/ExerciseMedia'
 import { Chip, Screen } from '../components/ui'
 import { useExercise } from '../lib/useCatalog'
@@ -99,6 +101,19 @@ function Review({ spec }: { spec: ExerciseSpec }) {
       </div>
 
       <KeyPoses spec={spec} />
+
+      <Section title="Imagens para o app (corpo 3D)">
+        {STILLS[spec.id]?.stills.length ? (
+          <>
+            <AnimStills stills={STILLS[spec.id].stills} alt={spec.name} />
+            <p className="mt-1 text-xs text-muted">
+              Entram no app quando o exercício for revisado. Para refazer depois de mudar a animação: npm run anim:stills -- {spec.id}
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-muted">Ainda não geradas: npm run anim:stills -- {spec.id}</p>
+        )}
+      </Section>
 
       <Section title={`Verificações automáticas (${failures.length ? `${failures.length} falha${failures.length > 1 ? 's' : ''}` : 'todas ok'})`}>
         {failures.length ? (

@@ -1,0 +1,230 @@
+{
+  "1160": {
+    "status": "verificado",
+    "thumb": 3,
+    "stills": [
+      {
+        "src": "anim/1160/1.webp",
+        "label": "Aterrissagem (em pé)"
+      },
+      {
+        "src": "anim/1160/2.webp",
+        "label": "Descendo"
+      },
+      {
+        "src": "anim/1160/3.webp",
+        "label": "Agachado (mãos no chão)"
+      },
+      {
+        "src": "anim/1160/4.webp",
+        "label": "Prancha"
+      },
+      {
+        "src": "anim/1160/5.webp",
+        "label": "Agachado (pés de volta)"
+      }
+    ]
+  },
+  "2330": {
+    "status": "rascunho",
+    "thumb": 1,
+    "stills": [
+      {
+        "src": "anim/2330/1.webp",
+        "label": "Braços estendidos"
+      },
+      {
+        "src": "anim/2330/2.webp",
+        "label": "Barra no peito"
+      }
+    ]
+  },
+  "0025": {
+    "status": "verificado",
+    "thumb": 1,
+    "stills": [
+      {
+        "src": "anim/0025/1.webp",
+        "label": "Braços estendidos"
+      },
+      {
+        "src": "anim/0025/2.webp",
+        "label": "Barra no peito"
+      }
+    ]
+  },
+  "0032": {
+    "status": "verificado",
+    "thumb": 3,
+    "stills": [
+      {
+        "src": "anim/0032/1.webp",
+        "label": "Posição inicial"
+      },
+      {
+        "src": "anim/0032/2.webp",
+        "label": "Barra no joelho"
+      },
+      {
+        "src": "anim/0032/3.webp",
+        "label": "Barra no meio da coxa"
+      },
+      {
+        "src": "anim/0032/4.webp",
+        "label": "Travamento"
+      }
+    ]
+  },
+  "0294": {
+    "status": "verificado",
+    "thumb": 2,
+    "stills": [
+      {
+        "src": "anim/0294/1.webp",
+        "label": "Braços estendidos"
+      },
+      {
+        "src": "anim/0294/2.webp",
+        "label": "Antebraço na horizontal"
+      },
+      {
+        "src": "anim/0294/3.webp",
+        "label": "Topo"
+      }
+    ]
+  },
+  "0334": {
+    "status": "verificado",
+    "thumb": 1,
+    "stills": [
+      {
+        "src": "anim/0334/1.webp",
+        "label": "Braços ao lado do corpo"
+      },
+      {
+        "src": "anim/0334/2.webp",
+        "label": "Braços paralelos ao chão"
+      }
+    ]
+  },
+  "0410": {
+    "status": "verificado",
+    "thumb": 1,
+    "stills": [
+      {
+        "src": "anim/0410/1.webp",
+        "label": "Em cima"
+      },
+      {
+        "src": "anim/0410/2.webp",
+        "label": "Embaixo"
+      }
+    ]
+  },
+  "0464": {
+    "status": "verificado",
+    "thumb": 0,
+    "stills": [
+      {
+        "src": "anim/0464/1.webp",
+        "label": "Prancha"
+      },
+      {
+        "src": "anim/0464/2.webp",
+        "label": "Girando (esquerda)"
+      },
+      {
+        "src": "anim/0464/3.webp",
+        "label": "Prancha lateral (esquerda)"
+      },
+      {
+        "src": "anim/0464/4.webp",
+        "label": "Girando (direita)"
+      },
+      {
+        "src": "anim/0464/5.webp",
+        "label": "Prancha lateral (direita)"
+      }
+    ]
+  },
+  "0652": {
+    "status": "verificado",
+    "thumb": 1,
+    "stills": [
+      {
+        "src": "anim/0652/1.webp",
+        "label": "Pendurado"
+      },
+      {
+        "src": "anim/0652/2.webp",
+        "label": "Queixo acima da barra"
+      }
+    ]
+  },
+  "0739": {
+    "status": "verificado",
+    "thumb": 1,
+    "stills": [
+      {
+        "src": "anim/0739/1.webp",
+        "label": "Pernas estendidas"
+      },
+      {
+        "src": "anim/0739/2.webp",
+        "label": "Joelhos a 90°"
+      }
+    ]
+  },
+  "lpo-clean-chao": {
+    "status": "rascunho",
+    "thumb": 3,
+    "stills": [
+      {
+        "src": "anim/lpo-clean-chao/1.webp",
+        "label": "Posição inicial"
+      },
+      {
+        "src": "anim/lpo-clean-chao/2.webp",
+        "label": "Barra no meio da coxa"
+      },
+      {
+        "src": "anim/lpo-clean-chao/3.webp",
+        "label": "Saltinho"
+      },
+      {
+        "src": "anim/lpo-clean-chao/4.webp",
+        "label": "Encaixe no fundo"
+      },
+      {
+        "src": "anim/lpo-clean-chao/5.webp",
+        "label": "Em pé com a barra"
+      }
+    ]
+  },
+  "lpo-power-clean": {
+    "status": "rascunho",
+    "thumb": 3,
+    "stills": [
+      {
+        "src": "anim/lpo-power-clean/1.webp",
+        "label": "Posição inicial"
+      },
+      {
+        "src": "anim/lpo-power-clean/2.webp",
+        "label": "Barra no meio da coxa"
+      },
+      {
+        "src": "anim/lpo-power-clean/3.webp",
+        "label": "Saltinho"
+      },
+      {
+        "src": "anim/lpo-power-clean/4.webp",
+        "label": "Encaixe"
+      },
+      {
+        "src": "anim/lpo-power-clean/5.webp",
+        "label": "Em pé com a barra"
+      }
+    ]
+  }
+}

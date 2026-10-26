@@ -59,6 +59,12 @@ export default defineConfig(({ command, isPreview }) => ({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          {
+            // imagens das animações próprias (public/anim, ~8 KB cada): guardadas conforme o usuário vê o exercício
+            urlPattern: /\/anim\/[^/]+\/\d+\.webp$/,
+            handler: 'CacheFirst',
+            options: { cacheName: 'progressa-anim', expiration: { maxEntries: 200, purgeOnQuotaError: true }, cacheableResponse: { statuses: [0, 200] } },
+          },
         ],
       },
       devOptions: { enabled: false },
