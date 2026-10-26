@@ -209,10 +209,10 @@ function pullupBar(p: Extract<PropSpec, { kind: 'pullupBar' }>): Shape[] {
   const out: Shape[] = [{ t: 'rod', a: v(p.x, p.y, -p.halfLength), b: v(p.x, p.y, p.halfLength), r: D.radius, color: P.metal }]
   for (const k of [-1, 1]) {
     const z = k * (p.halfLength + D.post)
-    out.push(tube(v(p.x, 0, z), v(p.x, p.y + 4, z), D.post))
+    // montante até a altura da barra (a própria barra une os dois; uma travessa logo acima parecia barra dupla)
+    out.push(tube(v(p.x, 0, z), v(p.x, p.y + D.post, z), D.post))
     out.push(tube(v(p.x - 28, 2, z), v(p.x + 28, 2, z), D.post)) // pé do montante
   }
-  out.push(tube(v(p.x, p.y + 4, -p.halfLength - D.post), v(p.x, p.y + 4, p.halfLength + D.post), 2.2)) // travessa de cima
   return out
 }
 

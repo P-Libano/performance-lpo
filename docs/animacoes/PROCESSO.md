@@ -62,6 +62,10 @@ qual dos dois é o certo. Não anime "o que deveria ser" nem "o que o GIF mostra
 - Use os construtores de pose (`src/anim/pose.ts`): você informa onde ficam a pelve, a inclinação do tronco,
   as mãos e os pés (pontos de contato); joelhos e cotovelos saem da cinemática inversa.
 - De 2 a 8 poses por exercício: uma por início/fim de fase, mais intermediárias onde o caminho curva.
+- Intermediárias com `holdMs: 0` formam com as vizinhas um trecho contínuo (`sampleAt`): a curva passa por
+  cada pose no seu tempo, sem quina nem salto de velocidade, e só para nas poses com pausa. Distribua os
+  `moveMs` pela distância que o corpo percorre em cada transição (mesma velocidade média), senão o
+  movimento acelera e freia no meio do trecho.
 - **A pose do meio** (índice `floor(n/2)`) vira a miniatura do app: precisa de `holdMs > 0` e deve ser a
   pose mais representativa (fundo do agachamento, barra no peito).
 - `phase` de uma pose-chave = a fase que **termina** nela (a transição até ela pertence a essa fase).
