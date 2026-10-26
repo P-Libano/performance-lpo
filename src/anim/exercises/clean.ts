@@ -3,7 +3,7 @@ import { lib } from '../checks'
 import type { ExerciseSpec } from '../spec'
 import { both, mirrorZ, type PoseSpec } from '../pose'
 import { sub, unit, v } from '../vec'
-import { barOnShoulders, base, EXTENSION, flat, fmt, fromShoulder, HIGH_PULL, KNEE, MID_THIGH, POLE_RACK, RACK, racked, SETUP, STAND, STRAIGHT_ARMS, turnover } from './power-clean'
+import { barOnShoulders, base, EXTENSION, flat, fmt, fromShoulder, HIGH_PULL, KNEE, MID_THIGH, POLE_RACK, RACK, racked, SETUP, STAND, STRAIGHT_ARMS, turnover, UNRACK } from './power-clean'
 
 /*
  * Clean completo (arremesso do chão, LPO): mesma puxada do power clean (power-clean.ts), mas a barra é recebida
@@ -57,15 +57,16 @@ export const clean: ExerciseSpec = {
   props: [{ kind: 'barbell' }],
   // mesma ordem do power clean: o encaixe é a pose do meio (miniatura do app)
   frames: [
+    { name: 'Barra no joelho', pose: K(KNEE), moveMs: 700, holdMs: 0, phase: 'Primeira puxada', ease: 'in', handPath: 'shoulder' },
     { name: 'Barra no meio da coxa', pose: K(MID_THIGH), moveMs: 320, holdMs: 0, phase: 'Primeira puxada', ease: 'linear' },
     { name: 'Extensão', pose: K(EXTENSION), moveMs: 260, holdMs: 0, phase: 'Segunda puxada', ease: 'linear' },
     { name: 'Puxada alta', pose: K(HIGH_PULL), moveMs: 220, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
     { name: 'Passagem por baixo da barra', pose: TURNOVER, moveMs: 220, holdMs: 0, phase: 'Encaixe', ease: 'linear' },
     { name: 'Encaixe no fundo', pose: CATCH_DEEP, moveMs: 340, holdMs: 500, phase: 'Encaixe', ease: 'out' },
     { name: 'Em pé com a barra', pose: K(STAND), moveMs: 1300, holdMs: 500, phase: 'Recuperação', ease: 'inout' },
-    { name: 'Barra descendo no joelho', pose: K(KNEE), moveMs: 900, holdMs: 0, phase: 'Retorno', ease: 'in', handPath: 'shoulder' },
+    { name: 'Barra saindo dos ombros', pose: K(UNRACK), moveMs: 500, holdMs: 0, phase: 'Retorno', ease: 'in' },
+    { name: 'Barra descendo no joelho', pose: K(KNEE), moveMs: 800, holdMs: 0, phase: 'Retorno', ease: 'linear', handPath: 'shoulder' },
     { name: 'Posição inicial', pose: K(SETUP), moveMs: 700, holdMs: 500, phase: 'Retorno', ease: 'out' },
-    { name: 'Barra no joelho', pose: K(KNEE), moveMs: 700, holdMs: 0, phase: 'Primeira puxada', ease: 'in', handPath: 'shoulder' },
   ],  checks: [
     { name: 'Barra nivelada', at: 'all', test: lib.handsLevel(1) },
     { name: 'Movimento simétrico', at: 'all', test: lib.symmetric(1) },
