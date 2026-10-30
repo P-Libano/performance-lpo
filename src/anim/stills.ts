@@ -20,10 +20,16 @@ export interface StillSet {
 
 export const STILLS = manifest as Record<string, StillSet>
 
-/** Imagens publicadas (exercício revisado) para um exercício do catálogo, se houver. */
+/**
+ * Beta (2026-10-30, decisão do Pablo): os LPO já usam as imagens 3D antes da revisão no Estúdio; os demais
+ * exercícios continuam com os GIFs do dataset até serem revisados.
+ */
+const BETA_EARLY = (exerciseId: string) => exerciseId.startsWith('lpo-')
+
+/** Imagens publicadas (exercício revisado, ou LPO no beta) para um exercício do catálogo, se houver. */
 export const publishedStills = (exerciseId: string): StillSet | undefined => {
   const s = STILLS[exerciseId]
-  return s?.status === 'revisado' && s.stills.length ? s : undefined
+  return s?.stills.length && (s.status === 'revisado' || BETA_EARLY(exerciseId)) ? s : undefined
 }
 
 export const stillUrl = (src: string) => import.meta.env.BASE_URL + src

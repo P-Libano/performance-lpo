@@ -11,7 +11,7 @@ import { setCell, startNewCycle } from './cicloStore'
 import { activateChoraoTemplate, getActiveProgram } from './programStore'
 
 let program: Program
-const db = new ProgressaDB('progressa')
+const db = new ProgressaDB()
 
 beforeAll(async () => {
   await db.exercises.bulkPut([...loadFixtureCatalog(), ...LPO_EXERCISES])

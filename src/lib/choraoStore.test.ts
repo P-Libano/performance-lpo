@@ -10,7 +10,7 @@ import { previousSnapshot } from './cicloStore'
 import { ChoraoImportError, importChorao } from './choraoStore'
 import { getActiveProgram, saveProfileAndGenerate } from './programStore'
 
-const db = new ProgressaDB('progressa')
+const db = new ProgressaDB()
 
 const week = (name = '', set = '', rep = '', kg = '', rpe = '') => ({ name, set, rep, kg, rpe })
 const empty = () => week()

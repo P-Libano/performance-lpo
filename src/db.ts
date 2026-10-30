@@ -8,6 +8,9 @@ export interface MetaRow {
   value: unknown
 }
 
+/** Nome próprio do banco: o Performance LPO e o Progressa ficam no mesmo domínio (p-libano.github.io). */
+export const DB_NAME = 'performance-lpo'
+
 export class ProgressaDB extends Dexie {
   exercises!: EntityTable<Exercise, 'id'>
   meta!: EntityTable<MetaRow, 'key'>
@@ -15,7 +18,7 @@ export class ProgressaDB extends Dexie {
   sessions!: EntityTable<SessionV2, 'id'>
   cycles!: EntityTable<CycleSnapshot, 'id'>
 
-  constructor(name = 'progressa') {
+  constructor(name = DB_NAME) {
     super(name)
     this.version(1).stores({
       exercises: 'id, bodyPart, equipment, target',
@@ -69,4 +72,10 @@ export const META = {
   lastBackupAt: 'lastBackupAt',
 } as const
 
-export const db = new ProgressaDB()
+/**
+ * Banco deste fork: nome próprio. O Progressa e o Performance LPO são publicados no mesmo domínio
+ * (p-libano.github.io/progressa e /performance-lpo): com o mesmo nome os dois abririam o mesmo IndexedDB, este
+ * fork o atualizaria para a versão dele e o Progressa deixaria de abrir. Os dados passam de um para o outro pelo
+ * backup (mesmo formato, `app: 'progressa'`).
+ */
+export const db = new ProgressaDB(DB_NAME)

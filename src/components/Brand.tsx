@@ -1,4 +1,12 @@
-import { APP_NAME, APP_NAME_PARTS } from '../brand'
+import { APP_NAME, APP_NAME_PARTS, APP_STAGE } from '../brand'
+
+/** Selo do estágio da versão ("beta"), ao lado da assinatura; some quando `APP_STAGE` for null. */
+export function StageBadge() {
+  if (!APP_STAGE) return null
+  return (
+    <span className="rounded-full border border-accent/50 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-accent uppercase">{APP_STAGE}</span>
+  )
+}
 
 /** Marca "Carga": barra, três anilhas crescendo e a trava. Cor = `currentColor` (use `text-accent`). */
 export function BrandMark({ className = 'size-6' }: { className?: string }) {

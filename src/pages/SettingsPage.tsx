@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { APP_NAME, APP_STAGE } from '../brand'
 import { ApiKeyCard } from '../components/ApiKeyCard'
 import { Button, Screen } from '../components/ui'
 import { MEDIA_ATTRIBUTION } from '../data/catalog'
@@ -87,6 +88,12 @@ export default function SettingsPage() {
         <p className="text-sm text-muted">
           Tudo fica só neste aparelho (IndexedDB). Faça backup para trocar de celular ou não perder o histórico.
         </p>
+        {APP_STAGE && (
+          <p className="mt-2 text-sm text-muted">
+            Versão {APP_STAGE} do {APP_NAME}: os dados são separados dos do Progressa. Para trazer os de lá, use Exportar JSON no
+            Progressa e Importar JSON aqui.
+          </p>
+        )}
         {counts && (
           <p className="mt-2 text-sm">
             {counts.sessions} {counts.sessions === 1 ? 'treino concluído' : 'treinos concluídos'} · {counts.routines} {counts.routines === 1 ? 'rotina' : 'rotinas'}

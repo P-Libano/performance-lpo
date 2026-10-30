@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { APP_NAME, APP_TAGLINE } from '../brand'
-import { BrandLockup } from '../components/Brand'
+import { BrandLockup, StageBadge } from '../components/Brand'
 import { ExerciseGif } from '../components/ExerciseMedia'
 import { LpoAnimation } from '../components/LpoAnimation'
 import { useExercise } from '../lib/useCatalog'
@@ -122,7 +122,10 @@ function Welcome({ onCustom }: { onCustom: () => void }) {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col px-5 pt-[calc(env(safe-area-inset-top)+20px)] pb-28">
-      <BrandLockup className="h-9" />
+      <div className="flex items-center gap-2">
+        <BrandLockup className="h-9" />
+        <StageBadge />
+      </div>
       <h1 className="display mt-5 text-2xl leading-tight font-bold">{APP_TAGLINE}</h1>
 
       <div className="mt-4 flex justify-center">
